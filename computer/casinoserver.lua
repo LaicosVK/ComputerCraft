@@ -93,33 +93,33 @@ local function handleRequest(sender, msg)
         return
     end
 
-    if msg.type == "register_request" then
-        print("Received register_request from ID " .. sender)
-        local key = createAccount()
-        rednet.send(sender, { ok = true, key = key }, "casino")
+	if msg.type == "register_request" then
+		print("Received register_request from ID " .. sender)
+		local key = createAccount()
+		rednet.send(sender, { ok = true, key = key }, "casino")
 
-    elseif msg.type == "get_balance" and msg.key then
-        print("Received get_balance for key " .. msg.key)
-        local bal = balances[msg.key]
-        rednet.send(sender, { ok = true, balance = bal or 0 })
+	elseif msg.type == "get_balance" and msg.key then
+		print("Received get_balance for key " .. msg.key)
+		local bal = balances[msg.key]
+		rednet.send(sender, { ok = true, balance = bal or 0 }, "casino")
 
-    elseif msg.type == "add_credits" and msg.key and msg.amount then
-        print("Received add_credits for key " .. msg.key .. " amount: " .. msg.amount)
-        balances[msg.key] = (balances[msg.key] or 0) + msg.amount
-        saveBalances()
-        rednet.send(sender, { ok = true, newBalance = balances[msg.key] })
+	elseif msg.type == "add_credits" and msg.key and msg.amount then
+		print("Received add_credits for key " .. msg.key .. " amount: " .. msg.amount)
+		balances[msg.key] = (balances[msg.key] or 0) + msg.amount
+		saveBalances()
+		rednet.send(sender, { ok = true, newBalance = balances[msg.key] }, "casino")
 
-    elseif msg.type == "remove_credits" and msg.key and msg.amount then
-        print("Received remove_credits for key " .. msg.key .. " amount: " .. msg.amount)
-        local current = balances[msg.key] or 0
-        if current >= msg.amount then
-            balances[msg.key] = current - msg.amount
-            saveBalances()
-            rednet.send(sender, { ok = true, newBalance = balances[msg.key] })
-        else
-            rednet.send(sender, { ok = false, error = "Insufficient funds" })
-            print("Failed to remove credits: insufficient funds")
-        end
+	elseif msg.type == "remove_credits" and msg.key and msg.amount then
+		print("Received remove_credits for key " .. msg.key .. " amount: " .. msg.amount)
+		local current = balances[msg.key] or 0
+		if current >= msg.amount then
+			balances[msg.key] = current - msg.amount
+			saveBalances()
+			rednet.send(sender, { ok = true, newBalance = balances[msg.key] }, "casino")
+		else
+			rednet.send(sender, { ok = false, error = "Insufficient funds" }, "casino")
+			print("Failed to remove credits: insufficient funds")
+		end
 
     else
         print("Received unknown request type.")
