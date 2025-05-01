@@ -104,53 +104,52 @@ end
 local function doRegistration()
     drawRegistrationScreen()
 
-    -- Sende Registrierung
+    -- Disklaufwerk über Modem auf "left" finden
+    local diskDrive = peripheral.wrap("left")
+    if not diskDrive or peripheral.getType("left") ~= "drive" then
+        print("Kein Disklaufwerk auf Seite 'left' gefunden.")
+        drawErrorScreen("Laufwerk nicht gefunden")
+        return
+    end
+
+    if not diskDrive.isDiskPresent() then
+        print("Keine Diskette im Laufwerk.")
+        drawErrorScreen("Bitte Diskette einlegen")
+        return
+    end
+
+    -- Mountpfad abrufen
+    local mountPath = diskDrive.getMountPath()
+    if not mountPath then
+        print("Mount-Pfad konnte nicht gelesen werden.")
+        drawErrorScreen("Kann Disk nicht lesen")
+        return
+    end
+
+    -- Anfrage an Master senden
     rednet.broadcast({ type = "register_request" }, "casino")
-    print("Sende Registrierungsanfrage an Master...")
+    print("Sende Anfrage an Master...")
     local id, reply = rednet.receive("casino", 5)
 
     if reply and reply.ok and reply.key then
-        print("Schlüssel empfangen vom Master: " .. reply.key)
+        print("Schlüssel empfangen: " .. reply.key)
 
-        -- Versuche Disklaufwerk zu finden
-        local diskSide = "left" -- Passe das bei Bedarf an
-        if not disk.isPresent(diskSide) then
-            print("Keine Diskette im Laufwerk.")
-            drawErrorScreen("Keine Diskette gefunden")
-            return
-        end
-
-        -- Versuche Mount-Pfad zu bekommen
-        local mountPath = disk.getMountPath(diskSide)
-        if not mountPath then
-            print("Mount-Pfad der Diskette konnte nicht ermittelt werden.")
-            drawErrorScreen("Mount-Pfad konnte nicht gelesen werden")
-            return
-        end
-
-        print("Mount-Pfad gefunden: " .. mountPath)
-
-        -- Schlüsseldatei schreiben
-        local filePath = mountPath .. "/player.key"
-        print("Schreibe Schlüssel nach: " .. filePath)
-        local file = fs.open(filePath, "w")
+        -- Datei auf Disk schreiben
+        local file = fs.open(mountPath .. "/player.key", "w")
         if file then
             file.write(reply.key)
             file.close()
-            print("Schlüssel erfolgreich geschrieben.")
-
-            -- Disk beschriften
-            disk.setLabel(diskSide, "Casino Karte")
-            print("Diskette als 'Casino Karte' beschriftet.")
+            diskDrive.setLabel("Casino Karte")
+            print("Schlüssel gespeichert und Disk beschriftet.")
 
             drawCompletionScreen()
             waitForButtons({ { label = "OK", y = 5 } })
         else
-            print("Datei konnte nicht zum Schreiben geöffnet werden.")
-            drawErrorScreen("Fehler beim Schreiben der Datei")
+            print("Fehler beim Schreiben auf Disk.")
+            drawErrorScreen("Schreibfehler")
         end
     else
-        print("Keine oder ungültige Antwort vom Master erhalten.")
+        print("Ungültige Antwort vom Master.")
         drawErrorScreen("Kommunikation fehlgeschlagen")
     end
 end
