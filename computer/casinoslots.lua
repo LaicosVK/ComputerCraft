@@ -66,24 +66,24 @@ end
 
 -- === Get Disk Key ===
 local function getKey()
-    -- Check if a disk is present by verifying if the disk drive has a mount path
+    -- Check if a disk is present and has data
     if not diskDriveSide or not disk.isPresent(diskDriveSide) or not disk.hasData(diskDriveSide) then
         debugMessage("No disk or no data disk present.")
         return nil
     end
 
+    -- Get the disk's mount path
     local mountPath = disk.getMountPath(diskDriveSide)
     debugMessage("Mount Path: " .. (mountPath or "nil"))
 
-    -- Check if player.key file exists on the disk
-    local keyFilePath = mountPath .. "/player.key"
-    if not fs.exists(keyFilePath) then
-        debugMessage("player.key file not found at path: " .. keyFilePath)
+    -- Ensure the mountPath is not nil and check for the file
+    if not mountPath or not fs.exists(mountPath .. "/player.key") then
+        debugMessage("player.key file not found at path: " .. (mountPath or "nil") .. "/player.key")
         return nil
     end
 
-    -- Attempt to read the key from the disk
-    local file = fs.open(keyFilePath, "r")
+    -- Attempt to read the key from the player.key file
+    local file = fs.open(mountPath .. "/player.key", "r")
     if file then
         local key = file:readAll()
         file:close()
