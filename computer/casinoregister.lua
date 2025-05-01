@@ -33,7 +33,7 @@ monitor.clear()
 local w, h = monitor.getSize()
 local driveName
 for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.getType(name) == "drive" then
+    if peripheral.getType(name) == "disk" then
         driveName = name
         break
     end
