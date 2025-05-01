@@ -59,37 +59,59 @@ local function drawScreen(status)
     monitor.setTextColor(colors.white)
 end
 
+-- Debugging function to output messages to the terminal
+local function debug(msg)
+    print("[DEBUG] " .. msg)
+end
+
+-- Function to read the player key from the disk
 local function readKey()
     debug("Suche nach eingelegter Diskette...")
 
-    for _, side in ipairs({ "top", "bottom", "left", "right", "back", "front" }) do
-        if disk.isPresent(side) and disk.hasData(side) then
-            debug("Diskette erkannt an Seite: " .. side)
-            local mountPath = disk.getMountPath(side)
-
-            if mountPath then
-                local keyPath = mountPath .. "/player.key"
-                debug("Prüfe auf Datei: " .. keyPath)
-
-                if fs.exists(keyPath) then
-                    debug("player.key gefunden!")
-                    local f = fs.open(keyPath, "r")
-                    local key = f.readAll()
-                    f.close()
-                    return key
-                else
-                    debug("player.key NICHT gefunden in: " .. keyPath)
-                end
-            else
-                debug("Mount-Pfad konnte nicht ermittelt werden.")
-            end
-        else
-            debug("Keine Diskette an Seite: " .. side)
-        end
+    -- Check if the disk drive is connected via the modem on the left side
+    local driveSide = "left"
+    if not disk.isPresent(driveSide) then
+        debug("Keine Diskette in Laufwerk an Seite: " .. driveSide)
+        return nil
     end
 
-    debug("Keine gültige Diskette mit player.key gefunden.")
-    return nil
+    debug("Diskette an Seite " .. driveSide .. " erkannt.")
+
+    -- Check if the disk has data
+    if not disk.hasData(driveSide) then
+        debug("Diskette hat keine Daten.")
+        return nil
+    end
+
+    -- Get the mount path of the disk
+    local mountPath = disk.getMountPath(driveSide)
+    if not mountPath then
+        debug("Mount-Pfad konnte nicht ermittelt werden.")
+        return nil
+    end
+
+    debug("Mount-Pfad: " .. mountPath)
+
+    -- Now check if the player.key file exists on the disk
+    local keyPath = mountPath .. "/player.key"
+    if fs.exists(keyPath) then
+        debug("player.key gefunden!")
+        local f = fs.open(keyPath, "r")
+        local key = f.readAll()
+        f.close()
+        return key
+    else
+        debug("player.key NICHT gefunden auf der Diskette.")
+        return nil
+    end
+end
+
+-- Main loop to attempt to read the key
+local key = readKey()
+if key then
+    print("Schlüssel erfolgreich gefunden: " .. key)
+else
+    print("Kein Schlüssel gefunden.")
 end
 
 
