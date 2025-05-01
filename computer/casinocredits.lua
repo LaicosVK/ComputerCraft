@@ -59,60 +59,62 @@ local function drawScreen(status)
     monitor.setTextColor(colors.white)
 end
 
--- Debugging function to output messages to the terminal
-local function debug(msg)
-    print("[DEBUG] " .. msg)
-end
+local function doRegistration()
+    drawRegistrationScreen()
+    rednet.broadcast({ type = "register_request" }, "casino")
+    print("Sent registration request to master.")
+    local id, reply = rednet.receive("casino", 5)
 
--- Function to check and read the key from the disk
-local function readKey()
-    -- Wrap the disk drive connected to the left modem
-    local diskDrive = peripheral.wrap("left") -- Assuming the modem is on the left side
-    if not diskDrive then
-        debug("Kein Laufwerk gefunden an der linken Seite!")
-        return nil
-    end
+    if reply and reply.ok and reply.key then
+        print("Received key from master: " .. reply.key)
 
-    -- Check if the disk is present in the disk drive
-    if not disk.isPresent("left") then
-        debug("Keine Diskette erkannt im Laufwerk.")
-        return nil
-    end
+        -- Locate the disk drive peripheral
+        local driveName
+        for _, name in ipairs(peripheral.getNames()) do
+            if peripheral.getType(name) == "drive" then
+                driveName = name
+                break
+            end
+        end
 
-    -- Check if the disk has data
-    if not disk.hasData("left") then
-        debug("Diskette hat keine Daten.")
-        return nil
-    end
+        if not driveName then
+            print("Kein Disklaufwerk gefunden.")
+            drawErrorScreen("Kein Laufwerk erkannt")
+            return
+        end
 
-    -- Get the mount path of the disk (to access its contents)
-    local mountPath = disk.getMountPath("left")
-    if not mountPath then
-        debug("Mount-Pfad konnte nicht ermittelt werden.")
-        return nil
-    end
-    debug("Mount-Pfad: " .. mountPath)
+        local drive = peripheral.wrap(driveName)
+        if not drive.isDiskPresent() then
+            print("Keine Diskette eingelegt.")
+            drawErrorScreen("Keine Diskette")
+            return
+        end
 
-    -- Now check if the player.key file exists on the disk
-    local keyPath = mountPath .. "/player.key"
-    if fs.exists(keyPath) then
-        debug("player.key gefunden!")
-        local f = fs.open(keyPath, "r")
-        local key = f.readAll()
+        local mountPath = drive.getMountPath()
+        print("Mount-Pfad: " .. (mountPath or "nil"))
+
+        if not mountPath then
+            drawErrorScreen("Fehler beim Mounten")
+            return
+        end
+
+        -- Write the player.key file to the disk
+        local f = fs.open(mountPath .. "/player.key", "w")
+        if not f then
+            print("Konnte Datei nicht schreiben.")
+            drawErrorScreen("Fehler beim Schreiben")
+            return
+        end
+        f.write(reply.key)
         f.close()
-        return key
-    else
-        debug("player.key NICHT gefunden auf der Diskette.")
-        return nil
-    end
-end
 
--- Main loop to attempt to read the key
-local key = readKey()
-if key then
-    print("Schlüssel erfolgreich gefunden: " .. key)
-else
-    print("Kein Schlüssel gefunden.")
+        disk.setLabel(driveName, "Casino Karte")
+        drawCompletionScreen()
+        waitForButtons({ { label = "OK", y = 5 } })
+    else
+        print("No response or invalid response from master.")
+        drawErrorScreen("Kommunikation fehlgeschlagen")
+    end
 end
 
 
