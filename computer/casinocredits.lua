@@ -60,28 +60,38 @@ local function drawScreen(status)
 end
 
 local function readKey()
-    debug("Versuche Diskette zu finden...")
-    for _, name in ipairs(peripheral.getNames()) do
-        local type = peripheral.getType(name)
-        if type == "disk" and disk.isPresent(name) and disk.hasData(name) then
-            debug("Disk gefunden: " .. name)
-            local mountPath = disk.getMountPath(name)
-            debug("Mount-Pfad: " .. tostring(mountPath))
-            if mountPath and fs.exists(mountPath .. "/player.key") then
-                debug("player.key gefunden auf: " .. mountPath)
-                local f = fs.open(mountPath .. "/player.key", "r")
-                local read = f.readAll()
-                f.close()
-                debug("Key gelesen: " .. read)
-                return read
+    debug("Suche nach eingelegter Diskette...")
+
+    for _, side in ipairs({ "top", "bottom", "left", "right", "back", "front" }) do
+        if disk.isPresent(side) and disk.hasData(side) then
+            debug("Diskette erkannt an Seite: " .. side)
+            local mountPath = disk.getMountPath(side)
+
+            if mountPath then
+                local keyPath = mountPath .. "/player.key"
+                debug("Prüfe auf Datei: " .. keyPath)
+
+                if fs.exists(keyPath) then
+                    debug("player.key gefunden!")
+                    local f = fs.open(keyPath, "r")
+                    local key = f.readAll()
+                    f.close()
+                    return key
+                else
+                    debug("player.key NICHT gefunden in: " .. keyPath)
+                end
             else
-                debug("player.key nicht gefunden.")
+                debug("Mount-Pfad konnte nicht ermittelt werden.")
             end
+        else
+            debug("Keine Diskette an Seite: " .. side)
         end
     end
-    debug("Keine gültige Diskette erkannt.")
+
+    debug("Keine gültige Diskette mit player.key gefunden.")
     return nil
 end
+
 
 local function sendCredits(action)
     if not key then return "Keine Karte gefunden." end
