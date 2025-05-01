@@ -103,58 +103,54 @@ end
 
 local function doRegistration()
     drawRegistrationScreen()
-    
-    -- Request registration key from master
+
+    -- Sende Registrierung
     rednet.broadcast({ type = "register_request" }, "casino")
-    print("Sent registration request to master.")
-    
-    -- Receive response from master
+    print("Sende Registrierungsanfrage an Master...")
     local id, reply = rednet.receive("casino", 5)
-    
-    -- Check if reply is valid
+
     if reply and reply.ok and reply.key then
-        print("Received key from master: " .. reply.key)
-        
-        -- Check if disk is present and has data
-        local diskSide = "left" -- Change to your disk drive side if necessary
+        print("Schlüssel empfangen vom Master: " .. reply.key)
+
+        -- Versuche Disklaufwerk zu finden
+        local diskSide = "left" -- Passe das bei Bedarf an
         if not disk.isPresent(diskSide) then
-            print("No disk in drive.")
-            drawErrorScreen("No disk inserted")
+            print("Keine Diskette im Laufwerk.")
+            drawErrorScreen("Keine Diskette gefunden")
             return
         end
 
+        -- Versuche Mount-Pfad zu bekommen
         local mountPath = disk.getMountPath(diskSide)
         if not mountPath then
-            print("Error: Unable to access the disk mount path.")
-            drawErrorScreen("Failed to access disk")
+            print("Mount-Pfad der Diskette konnte nicht ermittelt werden.")
+            drawErrorScreen("Mount-Pfad konnte nicht gelesen werden")
             return
         end
-        
-        print("Disk mount path: " .. mountPath)
 
-        -- Attempt to open and write the key to the disk
+        print("Mount-Pfad gefunden: " .. mountPath)
+
+        -- Schlüsseldatei schreiben
         local filePath = mountPath .. "/player.key"
-        print("Attempting to write key to: " .. filePath)
-        
+        print("Schreibe Schlüssel nach: " .. filePath)
         local file = fs.open(filePath, "w")
         if file then
             file.write(reply.key)
             file.close()
-            print("Key written to disk successfully.")
-            
-            -- Set the disk label
+            print("Schlüssel erfolgreich geschrieben.")
+
+            -- Disk beschriften
             disk.setLabel(diskSide, "Casino Karte")
-            print("Disk label set to 'Casino Karte'.")
-            
-            -- Completion screen
+            print("Diskette als 'Casino Karte' beschriftet.")
+
             drawCompletionScreen()
             waitForButtons({ { label = "OK", y = 5 } })
         else
-            print("Failed to open file for writing.")
-            drawErrorScreen("Failed to write to disk")
+            print("Datei konnte nicht zum Schreiben geöffnet werden.")
+            drawErrorScreen("Fehler beim Schreiben der Datei")
         end
     else
-        print("No response or invalid response from master.")
+        print("Keine oder ungültige Antwort vom Master erhalten.")
         drawErrorScreen("Kommunikation fehlgeschlagen")
     end
 end
