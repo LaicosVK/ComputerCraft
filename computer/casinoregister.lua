@@ -108,21 +108,14 @@ local function doRegistration()
     if reply and reply.ok and reply.key then
         print("Received key from master: " .. reply.key)
 
-        -- Find correct mount path for inserted floppy disk
-		local mountPath = nil
-		for _, path in ipairs(fs.list("/")) do
-			if fs.getDrive(path) == "disk" then
-				mountPath = "/" .. path
-				break
-			end
-		end
+        -- Get correct mount path
+        local mountPath = drive.getMountPath()
+        if not mountPath then
+            drawErrorScreen("Diskette nicht lesbar!")
+            return
+        end
 
-		if not mountPath then
-			drawErrorScreen("Diskette nicht erkannt!")
-			return
-		end
-
-		local f = fs.open(mountPath .. "/player.key", "w")
+        local f = fs.open(mountPath .. "/player.key", "w")
         if f then
             f.write(reply.key)
             f.close()
