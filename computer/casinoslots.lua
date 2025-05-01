@@ -146,6 +146,7 @@ end
 
 -- === Slot Logic mit Animation ===
 local function spinSlots()
+	monitor.clear()
     debugMessage("Starte Slot-Animation...")
 
     local result = { nil, nil, nil }
