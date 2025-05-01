@@ -66,34 +66,46 @@ end
 
 -- === Get Disk Key ===
 local function getKey()
-    -- Check if a disk is present and has data
-    if not diskDriveSide or not disk.isPresent(diskDriveSide) or not disk.hasData(diskDriveSide) then
-        debugMessage("No disk or no data disk present.")
+    -- Locate a connected disk drive peripheral
+    local driveName
+    for _, name in ipairs(peripheral.getNames()) do
+        if peripheral.getType(name) == "drive" then
+            driveName = name
+            break
+        end
+    end
+
+    if not driveName then
+        debugMessage("Kein Disklaufwerk gefunden.")
         return nil
     end
 
-    -- Get the disk's mount path
-    local mountPath = disk.getMountPath(diskDriveSide)
-    debugMessage("Mount Path: " .. (mountPath or "nil"))
+    local drive = peripheral.wrap(driveName)
+    if not drive.isDiskPresent() then
+        debugMessage("Keine Diskette im Laufwerk.")
+        return nil
+    end
 
-    -- Ensure the mountPath is not nil and check for the file
+    local mountPath = drive.getMountPath()
+    debugMessage("Mount-Pfad: " .. (mountPath or "nil"))
+
     if not mountPath or not fs.exists(mountPath .. "/player.key") then
-        debugMessage("player.key file not found at path: " .. (mountPath or "nil") .. "/player.key")
+        debugMessage("Datei player.key nicht gefunden bei: " .. (mountPath or "nil") .. "/player.key")
         return nil
     end
 
-    -- Attempt to read the key from the player.key file
     local file = fs.open(mountPath .. "/player.key", "r")
     if file then
         local key = file:readAll()
         file:close()
-        debugMessage("Key read: " .. key)
+        debugMessage("Key gelesen: " .. key)
         return key
     else
-        debugMessage("Failed to read player.key file.")
+        debugMessage("Fehler beim Lesen von player.key.")
         return nil
     end
 end
+
 
 -- === Talk to Master ===
 local function requestBalance(key)
