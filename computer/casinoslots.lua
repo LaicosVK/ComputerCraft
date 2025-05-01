@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "3"
+local version = "4"
 
 -- === Setup ===
 local modemSide = "top"
@@ -215,6 +215,7 @@ local function showResult(result, mult, payout)
     else
         centerText(line, "Schade...")
     end
+	local balance = requestBalance(key)
 	line = line + 2
 	local new_balance = balance - cost + payout
 	centerText(line, "Du hast jetzt ".. new_balance .. " Credits!")
