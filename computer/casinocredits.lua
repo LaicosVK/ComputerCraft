@@ -95,7 +95,19 @@ local function sendRequest(type)
     }
 
     rednet.broadcast(message, "casino")
-    local id, response = rednet.receive("casino", 3)
+    local timer = os.startTimer(3)
+	local response = nil
+
+	while true do
+		local event, p1, p2, p3 = os.pullEvent()
+		if event == "rednet_message" and p3 == "casino" and type(p2) == "table" and p2.ok ~= nil then
+			response = p2
+			break
+		elseif event == "timer" and p1 == timer then
+			print("[DEBUG] Timeout beim Warten auf Antwort.")
+			break
+		end
+	end
 
     if response and response.ok then
         center("OK! Neuer Kontostand: " .. tostring(response.newBalance), h)
