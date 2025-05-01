@@ -161,7 +161,7 @@ local function spinSlots()
     -- Anzahl an Wiederholungen für jeden Abschnitt
     local spinCounts = { 20, 60, 120 }
 
-    for frame = 1, spinCounts[1] do
+    for frame = 1, spinCounts[3] do
         -- Erzeuge neue Symbole für alle drei, solange sie nicht "stehen bleiben"
         for i = 1, 3 do
             if frame <= spinCounts[i] then
