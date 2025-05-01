@@ -132,12 +132,12 @@ local function sendRequest(action)
                 center("Fehler: Antwort negativ", 2)
                 debug("Antwort mit ok = false")
             end
-            sleep(2)
+            sleep(0.5)
             return
         elseif event == "timer" and p1 == timer then
             center("Zeitüberschreitung!", 2)
             debug("Timeout beim Warten auf Antwort")
-            sleep(0.5)
+            sleep(1)
             return
         end
     end
