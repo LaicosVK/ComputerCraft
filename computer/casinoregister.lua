@@ -103,57 +103,23 @@ end
 
 local function doRegistration()
     drawRegistrationScreen()
-
-    -- Disklaufwerk über Modem auf "left" finden
-    local diskDrive = peripheral.wrap("left")
-    if not diskDrive or peripheral.getType("left") ~= "drive" then
-        print("Kein Disklaufwerk auf Seite 'left' gefunden.")
-        drawErrorScreen("Laufwerk nicht gefunden")
-        return
-    end
-
-    if not diskDrive.isDiskPresent() then
-        print("Keine Diskette im Laufwerk.")
-        drawErrorScreen("Bitte Diskette einlegen")
-        return
-    end
-
-    -- Mountpfad abrufen
-    local mountPath = diskDrive.getMountPath()
-    if not mountPath then
-        print("Mount-Pfad konnte nicht gelesen werden.")
-        drawErrorScreen("Kann Disk nicht lesen")
-        return
-    end
-
-    -- Anfrage an Master senden
     rednet.broadcast({ type = "register_request" }, "casino")
-    print("Sende Anfrage an Master...")
+    print("Sent registration request to master.")
     local id, reply = rednet.receive("casino", 5)
 
     if reply and reply.ok and reply.key then
-        print("Schlüssel empfangen: " .. reply.key)
-
-        -- Datei auf Disk schreiben
-        local file = fs.open(mountPath .. "/player.key", "w")
-        if file then
-            file.write(reply.key)
-            file.close()
-            diskDrive.setLabel("Casino Karte")
-            print("Schlüssel gespeichert und Disk beschriftet.")
-
-            drawCompletionScreen()
-            waitForButtons({ { label = "OK", y = 5 } })
-        else
-            print("Fehler beim Schreiben auf Disk.")
-            drawErrorScreen("Schreibfehler")
-        end
+        print("Received key from master: " .. reply.key)
+        local f = fs.open(driveName .. "/player.key", "w")
+        f.write(reply.key)
+        f.close()
+        disk.setLabel(driveName, "Casino Karte")
+        drawCompletionScreen()
+        waitForButtons({ { label = "OK", y = 5 } })
     else
-        print("Ungültige Antwort vom Master.")
+        print("No response or invalid response from master.")
         drawErrorScreen("Kommunikation fehlgeschlagen")
     end
 end
-
 
 while true do
     drawWelcomeScreen()
