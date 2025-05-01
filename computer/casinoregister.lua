@@ -31,7 +31,13 @@ monitor.setTextColor(colors.white)
 monitor.clear()
 
 local w, h = monitor.getSize()
-local driveName = peripheral.getName(drive)
+local driveName
+for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "drive" then
+        driveName = name
+        break
+    end
+end
 
 local function center(text, y)
     local x = math.floor((w - #text) / 2) + 1
