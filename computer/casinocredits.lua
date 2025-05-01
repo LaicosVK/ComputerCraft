@@ -1,9 +1,27 @@
 -- === Setup ===
 local monitor = peripheral.find("monitor")
-local wirelessModemSide = "top"
 local drive = peripheral.find("drive")
+local wirelessModemSide = "top"
 
-rednet.open(wirelessModemSide)
+-- Debug utility
+local function debug(msg)
+    print("[DEBUG] " .. msg)
+end
+
+-- Open wireless modem
+if peripheral.getType(wirelessModemSide) == "modem" then
+    rednet.open(wirelessModemSide)
+    debug("Wireless modem opened on side: " .. wirelessModemSide)
+else
+    print("Kein drahtloses Modem oben gefunden!")
+    return
+end
+
+if not monitor then
+    print("Monitor nicht gefunden!")
+    return
+end
+
 monitor.setTextScale(1)
 monitor.setBackgroundColor(colors.black)
 monitor.setTextColor(colors.white)
@@ -42,17 +60,26 @@ local function drawScreen(status)
 end
 
 local function readKey()
+    debug("Versuche Diskette zu finden...")
     for _, name in ipairs(peripheral.getNames()) do
-        if peripheral.getType(name) == "disk" and disk.isPresent(name) and disk.hasData(name) then
+        local type = peripheral.getType(name)
+        if type == "disk" and disk.isPresent(name) and disk.hasData(name) then
+            debug("Disk gefunden: " .. name)
             local mountPath = disk.getMountPath(name)
+            debug("Mount-Pfad: " .. tostring(mountPath))
             if mountPath and fs.exists(mountPath .. "/player.key") then
+                debug("player.key gefunden auf: " .. mountPath)
                 local f = fs.open(mountPath .. "/player.key", "r")
                 local read = f.readAll()
                 f.close()
+                debug("Key gelesen: " .. read)
                 return read
+            else
+                debug("player.key nicht gefunden.")
             end
         end
     end
+    debug("Keine gültige Diskette erkannt.")
     return nil
 end
 
@@ -60,12 +87,15 @@ local function sendCredits(action)
     if not key then return "Keine Karte gefunden." end
 
     local typeMsg = action == "add" and "add_credits" or "remove_credits"
+    debug("Sende Rednet-Nachricht: " .. typeMsg)
     rednet.broadcast({ type = typeMsg, key = key, amount = 5 }, "casino")
     local id, msg = rednet.receive("casino", 2)
 
     if msg and msg.ok then
-        return "Erfolg: Neuer Kontostand: " .. (msg.newBalance or "?")
+        debug("Antwort vom Server erhalten. Neuer Kontostand: " .. tostring(msg.newBalance))
+        return "Erfolg! Kontostand: " .. (msg.newBalance or "?")
     else
+        debug("Keine oder ungültige Antwort vom Server.")
         return "Fehlgeschlagen."
     end
 end
@@ -80,6 +110,7 @@ end
 
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
+    debug("Monitor Touch bei x=" .. x .. ", y=" .. y)
 
     if y == 4 then
         local result = sendCredits("add")
