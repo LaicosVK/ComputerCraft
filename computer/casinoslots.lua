@@ -14,9 +14,9 @@ rednet.open(modemSide)
 
 -- === Symbols & Weights ===
 local symbolPool = {
-    { char = "■", tier = "small", weight = 50 },
-    { char = "☼", tier = "medium", weight = 30 },
-    { char = "♥", tier = "big", weight = 20 },
+    { char = "\x02", tier = "small", weight = 50 },
+    { char = "\x0F", tier = "medium", weight = 30 },
+    { char = "\x03", tier = "big", weight = 20 },
 }
 
 -- === Weighted Random Symbol ===
@@ -172,13 +172,13 @@ end
 local function showResult(result, mult, payout)
     monitor.clear()
     centerText(2, "Result:")
-    local line = 4
+    local line = 5
     centerText(line, result[1].char .. " | " .. result[2].char .. " | " .. result[3].char)
-    line = line + 2
+    line = line + 3
     if mult > 0 then
-        centerText(line, "Du gewinnst" .. payout .. "credits!")
+        centerText(line, "Du gewinnst " .. payout .. " credits!")
     else
-        centerText(line, "You Lose!")
+        centerText(line, "Schade...")
     end
     sleep(3)
 end
