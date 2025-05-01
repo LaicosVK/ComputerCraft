@@ -64,32 +64,33 @@ local function debug(msg)
     print("[DEBUG] " .. msg)
 end
 
--- Function to read the player key from the disk
+-- Function to check and read the key from the disk
 local function readKey()
-    debug("Suche nach eingelegter Diskette...")
-
-    -- Check if the disk drive is connected via the modem on the left side
-    local driveSide = "left"
-    if not disk.isPresent(driveSide) then
-        debug("Keine Diskette in Laufwerk an Seite: " .. driveSide)
+    -- Wrap the disk drive connected to the left modem
+    local diskDrive = peripheral.wrap("left") -- Assuming the modem is on the left side
+    if not diskDrive then
+        debug("Kein Laufwerk gefunden an der linken Seite!")
         return nil
     end
 
-    debug("Diskette an Seite " .. driveSide .. " erkannt.")
+    -- Check if the disk is present in the disk drive
+    if not disk.isPresent("left") then
+        debug("Keine Diskette erkannt im Laufwerk.")
+        return nil
+    end
 
     -- Check if the disk has data
-    if not disk.hasData(driveSide) then
+    if not disk.hasData("left") then
         debug("Diskette hat keine Daten.")
         return nil
     end
 
-    -- Get the mount path of the disk
-    local mountPath = disk.getMountPath(driveSide)
+    -- Get the mount path of the disk (to access its contents)
+    local mountPath = disk.getMountPath("left")
     if not mountPath then
         debug("Mount-Pfad konnte nicht ermittelt werden.")
         return nil
     end
-
     debug("Mount-Pfad: " .. mountPath)
 
     -- Now check if the player.key file exists on the disk
