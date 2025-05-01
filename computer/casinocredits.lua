@@ -113,4 +113,14 @@ while true do
     drawButton("5 Credits hinzufuegen", 3, colors.green)
     drawButton("5 Credits abziehen", 5, colors.red)
 
-    local event, side, x, y
+    local event, side, x, y = os.pullEvent("monitor_touch")
+    if y == 3 then
+        print("[DEBUG] Button Add 5 pressed.")
+        sendRequest("add")
+    elseif y == 5 then
+        print("[DEBUG] Button Remove 5 pressed.")
+        sendRequest("remove")
+    end
+
+    sleep(2)
+end
