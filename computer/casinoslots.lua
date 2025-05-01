@@ -144,14 +144,47 @@ local function addCredits(key, amount)
     return false
 end
 
--- === Slot Logic ===
+-- === Slot Logic mit Animation ===
 local function spinSlots()
-    debugMessage("Spinning slots...")
-    local result = {}
+    debugMessage("Starte Slot-Animation...")
+
+    local result = { nil, nil, nil }
+    local spinSymbols = {}
+
+    -- Initialisiere alle 3 Spalten mit Zufallswerten
     for i = 1, 3 do
-        result[i] = getRandomSymbol()
+        spinSymbols[i] = getRandomSymbol()
+    end
+
+    -- Anzahl an Wiederholungen für jeden Abschnitt
+    local spinCounts = { 15, 10, 6 }
+
+    for frame = 1, spinCounts[1] do
+        -- Erzeuge neue Symbole für alle drei, solange sie nicht "stehen bleiben"
+        for i = 1, 3 do
+            if frame <= spinCounts[i] then
+                spinSymbols[i] = getRandomSymbol()
+            end
+        end
+
+        -- Darstellung auf Zeile 6
+        local display = ""
+        for i = 1, 3 do
+            display = display .. spinSymbols[i].char
+            if i < 3 then
+                display = display .. " | "
+            end
+        end
+        centerText(6, display)
+        sleep(0.1)
+    end
+
+    -- Speichere das finale Ergebnis
+    for i = 1, 3 do
+        result[i] = spinSymbols[i]
         debugMessage("Slot " .. i .. ": " .. result[i].char)
     end
+
     return result
 end
 
@@ -194,7 +227,7 @@ while true do
 
         local key = getKey()
         if not key then
-            drawScreen("error")
+            drawScreen("Keine valide Karte")
             sleep(2)
             drawScreen("idle")
         else
