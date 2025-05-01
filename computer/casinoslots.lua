@@ -237,8 +237,11 @@ while true do
             if balance and balance >= cost then
                 if removeCredits(key, cost) then
                     local result = spinSlots()
+					debugMessage(result)
                     local mult = evaluate(result)
+					debugMessage(mult)
                     local payout = mult * cost
+					debugMessage(payout)
                     if payout > 0 then addCredits(key, payout) end
                     showResult(result, mult, payout)
                 else
