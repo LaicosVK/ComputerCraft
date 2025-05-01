@@ -7,17 +7,29 @@ local payout_big = config.payout_big
 
 -- === Setup ===
 local modemSide = "top"
-local diskDriveSide = "left"  -- Set disk drive on the left
+local diskDrive = peripheral.find("drive")
+local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
-local diskDrive = peripheral.wrap(diskDriveSide)
 rednet.open(modemSide)
 
--- === Symbols ===
-local symbols = {
-    { char = "A", tier = "small" },
-    { char = "B", tier = "medium" },
-    { char = "C", tier = "big" }
+-- === Symbols & Weights ===
+local symbolPool = {
+    { char = "A", tier = "small", weight = 50 },
+    { char = "B", tier = "medium", weight = 30 },
+    { char = "C", tier = "big", weight = 20 },
 }
+
+-- === Weighted Random Symbol ===
+local function getRandomSymbol()
+    local totalWeight = 0
+    for _, s in ipairs(symbolPool) do totalWeight = totalWeight + s.weight end
+    local pick = math.random(totalWeight)
+    local cumulative = 0
+    for _, s in ipairs(symbolPool) do
+        cumulative = cumulative + s.weight
+        if pick <= cumulative then return s end
+    end
+end
 
 -- === Debug Function ===
 local function debugMessage(msg)
@@ -36,43 +48,45 @@ local function drawScreen(state)
     monitor.setBackgroundColor(colors.black)
     monitor.setTextColor(colors.white)
     monitor.clear()
-    centerText(1, "Slot Machine")
-    centerText(3, "Insert Member Card")
+    centerText(2, "Slot Machine")
+    centerText(4, "Insert Member Card")
 
     if state == "idle" then
-        centerText(5, "Press to Play (" .. cost .. "C)")
+        centerText(6, "Cost: " .. cost .. " credits")
         monitor.setBackgroundColor(colors.green)
-        monitor.setTextColor(colors.white)
-        monitor.setCursorPos(10, 7)
-        monitor.write("[ PLAY ]")
+        monitor.setTextColor(colors.black)
+        centerText(8, "[   PLAY   ]")
+        monitor.setBackgroundColor(colors.black)
     elseif state == "spinning" then
-        centerText(5, "Spinning...")
+        centerText(6, "Spinning...")
     elseif state == "error" then
-        centerText(5, "Error!")
+        centerText(6, "Error!")
     end
 end
 
 -- === Get Disk Key ===
 local function getKey()
-    -- Check if a disk is present by verifying mount path
-    local mountPath = diskDrive.getMountPath()
-    if not mountPath or not fs.exists(mountPath) then
-        debugMessage("No disk in the drive.")
+    if not diskDriveSide or not disk.isPresent(diskDriveSide) or not disk.hasData(diskDriveSide) then
+        debugMessage("No disk or no data disk present.")
         return nil
     end
 
-    -- Attempt to read the key from the disk
-    debugMessage("Disk found, reading key...")
-    local file = fs.open(mountPath .. "/key", "r")
-    if file then
-        local key = file:readAll()
-        file:close()
-        debugMessage("Key read: " .. key)
-        return key
-    else
-        debugMessage("Failed to read key from disk.")
+    local mountPath = disk.getMountPath(diskDriveSide)
+    if not mountPath or not fs.exists(mountPath .. "/key") then
+        debugMessage("Key file not found.")
         return nil
     end
+
+    local file = fs.open(mountPath .. "/key", "r")
+    if file then
+        local key = file.readAll()
+        file.close()
+        debugMessage("Key read: " .. key)
+        return key
+    end
+
+    debugMessage("Failed to read key file.")
+    return nil
 end
 
 -- === Talk to Master ===
@@ -81,19 +95,19 @@ local function requestBalance(key)
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
     if msg and msg.ok then
-        debugMessage("Balance received: " .. (msg.balance or 0))
+        debugMessage("Balance: " .. msg.balance)
         return msg.balance
     end
-    debugMessage("Failed to receive balance.")
+    debugMessage("Failed to get balance.")
     return nil
 end
 
 local function removeCredits(key, amount)
-    debugMessage("Attempting to remove " .. amount .. " credits from " .. key)
+    debugMessage("Removing " .. amount .. " credits.")
     rednet.broadcast({ type = "remove_credits", key = key, amount = amount }, "casino")
     local id, msg = rednet.receive("casino", 2)
     if msg and msg.ok then
-        debugMessage("Credits removed successfully. New balance: " .. (msg.newBalance or 0))
+        debugMessage("Credits removed.")
         return true
     end
     debugMessage("Failed to remove credits.")
@@ -101,11 +115,11 @@ local function removeCredits(key, amount)
 end
 
 local function addCredits(key, amount)
-    debugMessage("Adding " .. amount .. " credits to " .. key)
+    debugMessage("Adding " .. amount .. " credits.")
     rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
     local id, msg = rednet.receive("casino", 2)
     if msg and msg.ok then
-        debugMessage("Credits added successfully. New balance: " .. (msg.newBalance or 0))
+        debugMessage("Credits added.")
         return true
     end
     debugMessage("Failed to add credits.")
@@ -114,11 +128,11 @@ end
 
 -- === Slot Logic ===
 local function spinSlots()
-    debugMessage("Spinning the slots...")
+    debugMessage("Spinning slots...")
     local result = {}
     for i = 1, 3 do
-        result[i] = symbols[math.random(1, #symbols)]
-        debugMessage("Slot " .. i .. " result: " .. result[i].char)
+        result[i] = getRandomSymbol()
+        debugMessage("Slot " .. i .. ": " .. result[i].char)
     end
     return result
 end
@@ -126,38 +140,37 @@ end
 local function evaluate(result)
     debugMessage("Evaluating result...")
     if result[1].char == result[2].char and result[2].char == result[3].char then
-        debugMessage("Match found! Tier: " .. result[1].tier)
-        if result[1].tier == "small" then return payout_small
-        elseif result[1].tier == "medium" then return payout_medium
-        elseif result[1].tier == "big" then return payout_big
+        local tier = result[1].tier
+        debugMessage("Match! Tier: " .. tier)
+        if tier == "small" then return payout_small
+        elseif tier == "medium" then return payout_medium
+        elseif tier == "big" then return payout_big
         end
     end
-    debugMessage("No match, no payout.")
+    debugMessage("No win.")
     return 0
 end
 
-local function showResult(result, winMult)
+local function showResult(result, mult)
     monitor.clear()
     centerText(2, "Result:")
     local line = 4
-    local symbolsStr = result[1].char .. " | " .. result[2].char .. " | " .. result[3].char
-    centerText(line, symbolsStr)
+    centerText(line, result[1].char .. " | " .. result[2].char .. " | " .. result[3].char)
     line = line + 2
-    if winMult > 0 then
-        centerText(line, "You Win x" .. winMult .. "!")
+    if mult > 0 then
+        centerText(line, "You Win x" .. mult .. "!")
     else
         centerText(line, "You Lose!")
     end
-    debugMessage("Displayed result.")
     sleep(3)
 end
 
--- === Main ===
+-- === Main Loop ===
 drawScreen("idle")
 
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
-    if y == 7 and x >= 10 and x <= 17 then
+    if y == 8 then
         debugMessage("Play button pressed.")
         drawScreen("spinning")
 
@@ -182,10 +195,10 @@ while true do
             else
                 monitor.clear()
                 centerText(5, "Not enough credits")
-                debugMessage("Insufficient balance.")
+                debugMessage("Balance too low.")
                 sleep(2)
             end
+            drawScreen("idle")
         end
-        drawScreen("idle")
     end
 end
