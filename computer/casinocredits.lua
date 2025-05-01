@@ -116,7 +116,8 @@ local function sendRequest(action)
         return
     end
 
-    rednet.broadcast({ type = "credit_action", action = action, key = key }, "casino")
+    local msgType = (action == "add") and "add_credits" or "remove_credits"
+	rednet.broadcast({ type = msgType, key = key, amount = 5 }, "casino")
     debug("Anfrage gesendet: " .. action)
 
     -- Warte auf Antwort
