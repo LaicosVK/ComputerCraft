@@ -172,9 +172,9 @@ end
 local function showResult(result, mult, payout)
     monitor.clear()
     centerText(2, "Result:")
-    local line = 5
+    local line = 6
     centerText(line, result[1].char .. " | " .. result[2].char .. " | " .. result[3].char)
-    line = line + 3
+    line = line + 4
     if mult > 0 then
         centerText(line, "Du gewinnst " .. payout .. " credits!")
     else
