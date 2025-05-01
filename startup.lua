@@ -55,7 +55,7 @@ else
     local localContent = fileExists(localFile) and readFile(localFile) or ""
 
     if remoteContent ~= localContent then
-        print("Update found. Replacing old script...")
+        print("!!!\n!!!\nUpdate found. Replacing old script...\n!!!\n!!!")
         if fileExists(localFile) then fs.delete(localFile) end
         fs.move("temp_dl", localFile)
     else
