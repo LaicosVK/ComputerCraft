@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "1"
+local version = "2"
 
 -- === Setup ===
 local modemSide = "top"
@@ -159,7 +159,7 @@ local function spinSlots()
     end
 
     -- Anzahl an Wiederholungen für jeden Abschnitt
-    local spinCounts = { 20, 60, 120 }
+    local spinCounts = { 10, 30, 60 }
 
     for frame = 1, spinCounts[3] do
         -- Erzeuge neue Symbole für alle drei, solange sie nicht "stehen bleiben"
@@ -237,11 +237,8 @@ while true do
             if balance and balance >= cost then
                 if removeCredits(key, cost) then
                     local result = spinSlots()
-					debugMessage(result)
                     local mult = evaluate(result)
-					debugMessage(mult)
                     local payout = mult * cost
-					debugMessage(payout)
                     if payout > 0 then addCredits(key, payout) end
                     showResult(result, mult, payout)
                 else
