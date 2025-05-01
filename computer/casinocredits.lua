@@ -121,7 +121,7 @@ local function sendRequest(action)
     debug("Anfrage gesendet: " .. action)
 
     -- Warte auf Antwort
-    local timer = os.startTimer(3)
+    local timer = os.startTimer(0.5)
     while true do
         local event, p1, p2, p3 = os.pullEvent()
         if event == "rednet_message" and type(p2) == "table" and p2.ok ~= nil and p3 == "casino" then
