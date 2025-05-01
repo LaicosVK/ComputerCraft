@@ -31,14 +31,6 @@ monitor.setTextColor(colors.white)
 monitor.clear()
 
 local w, h = monitor.getSize()
-local driveName
-for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.getType(name) == "disk" then
-        driveName = name
-        break
-    end
-end
-
 local function center(text, y)
     local x = math.floor((w - #text) / 2) + 1
     monitor.setCursorPos(x, y)
@@ -97,7 +89,7 @@ local function drawCompletionScreen()
     print("Registration complete.")
     monitor.clear()
     center("Fertig!", 2)
-    center("Viel Glueck!", 3)
+    center("Viel Glück!", 3)
     drawButton("OK", 5, colors.green)
 end
 
@@ -115,25 +107,39 @@ local function doRegistration()
 
     if reply and reply.ok and reply.key then
         print("Received key from master: " .. reply.key)
-        local f = fs.open(driveName .. "/player.key", "w")
-        f.write(reply.key)
-        f.close()
-        disk.setLabel(driveName, "Casino Karte")
-        drawCompletionScreen()
-        waitForButtons({ { label = "OK", y = 5 } })
+
+        -- Get correct mount path
+        local mountPath = drive.getMountPath()
+        if not mountPath then
+            drawErrorScreen("Diskette nicht lesbar!")
+            return
+        end
+
+        local f = fs.open(mountPath .. "/player.key", "w")
+        if f then
+            f.write(reply.key)
+            f.close()
+            disk.setLabel(peripheral.getName(drive), "Casino Karte")
+            drawCompletionScreen()
+            waitForButtons({ { label = "OK", y = 5 } })
+        else
+            print("Fehler beim Schreiben auf Diskette.")
+            drawErrorScreen("Schreibfehler auf Diskette!")
+        end
     else
         print("No response or invalid response from master.")
         drawErrorScreen("Kommunikation fehlgeschlagen")
     end
 end
 
+-- === Main Loop ===
 while true do
     drawWelcomeScreen()
     local clicked = waitForButtons({
         { label = "Registrieren", y = 5 }
     })
 
-    if disk.isPresent(driveName) and disk.hasData(driveName) then
+    if disk.isPresent(peripheral.getName(drive)) and disk.hasData(peripheral.getName(drive)) then
         doRegistration()
     else
         local retryInsert = true
@@ -147,7 +153,7 @@ while true do
             if insertClick == "Abbrechen" then
                 retryInsert = false
             elseif insertClick == "Weiter" then
-                if not disk.isPresent(driveName) then
+                if not disk.isPresent(peripheral.getName(drive)) then
                     print("No disk present.")
                     drawErrorScreen("Keine Diskette erkannt!")
                 else
