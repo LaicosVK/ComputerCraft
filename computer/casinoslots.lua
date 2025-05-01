@@ -251,6 +251,7 @@ while true do
             else
                 monitor.clear()
                 centerText(5, "Dir fehlen Credits.")
+                centerText(7, "du hast " .. balance .. " Credits.")
                 debugMessage("Balance too low.")
                 sleep(2)
             end
