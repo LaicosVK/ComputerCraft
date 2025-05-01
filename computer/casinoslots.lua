@@ -204,7 +204,7 @@ local function evaluate(result)
     return 0
 end
 
-local function showResult(result, mult, payout)
+local function showResult(result, mult, payout, balance)
     monitor.clear()
     centerText(2, "Result:")
     local line = 6
@@ -215,7 +215,6 @@ local function showResult(result, mult, payout)
     else
         centerText(line, "Schade...")
     end
-	local balance = requestBalance(key)
 	line = line + 2
 	local new_balance = balance - cost + payout
 	centerText(line, "Du hast jetzt ".. new_balance .. " Credits!")
@@ -244,7 +243,7 @@ while true do
                     local mult = evaluate(result)
                     local payout = mult * cost
                     if payout > 0 then addCredits(key, payout) end
-                    showResult(result, mult, payout)
+                    showResult(result, mult, payout, balance)
                 else
                     drawScreen("error")
                     sleep(2)
