@@ -136,7 +136,7 @@ local function sendCredits(action)
 end
 
 -- === Main ===
-key = readKey()
+key = getKey()
 if not key then
     drawScreen("Keine Karte erkannt!")
 else
