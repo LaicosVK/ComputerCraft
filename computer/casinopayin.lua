@@ -108,6 +108,15 @@ local function drawCentered(text, y)
     monitor.write(text)
 end
 
+local function formatItemName(rawName)
+    local name = rawName:gsub("minecraft:", "")           -- Remove namespace
+    name = name:gsub("_", " ")                            -- Replace underscores with spaces
+    name = name:gsub("(%a)([%w']*)", function(a,b)        -- Capitalize each word
+        return a:upper() .. b:lower()
+    end)
+    return name
+end
+
 local function drawCenteredTradeValuesSorted(monitor, tradeValues, startY)
     local w, _ = monitor.getSize()
     local y = startY
@@ -123,9 +132,10 @@ local function drawCenteredTradeValuesSorted(monitor, tradeValues, startY)
         return a.value > b.value
     end)
 
-    -- Draw each line
+    -- Draw each line nicely
     for _, entry in ipairs(items) do
-        local text = entry.name .. ": " .. entry.value .. " Credits"
+        local displayName = formatItemName(entry.name)
+        local text = displayName .. ": " .. entry.value .. " Credits"
         local x = math.floor((w - #text) / 2) + 1
         monitor.setCursorPos(x, y)
         monitor.write(text)
