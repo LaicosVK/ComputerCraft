@@ -108,12 +108,24 @@ local function drawCentered(text, y)
     monitor.write(text)
 end
 
-local function drawCenteredTradeValues(monitor, tradeValues, startY)
+local function drawCenteredTradeValuesSorted(monitor, tradeValues, startY)
     local w, _ = monitor.getSize()
     local y = startY
 
+    -- Convert to sortable array
+    local items = {}
     for item, value in pairs(tradeValues) do
-        local text = item .. ": " .. value .. " Credits"
+        table.insert(items, { name = item, value = value })
+    end
+
+    -- Sort by value descending
+    table.sort(items, function(a, b)
+        return a.value > b.value
+    end)
+
+    -- Draw each line
+    for _, entry in ipairs(items) do
+        local text = entry.name .. ": " .. entry.value .. " Credits"
         local x = math.floor((w - #text) / 2) + 1
         monitor.setCursorPos(x, y)
         monitor.write(text)
@@ -130,6 +142,7 @@ local function showMainScreen()
 	monitor.setTextColor(colors.black)
     drawCentered("[Berechnen]", 9)
 	monitor.setBackgroundColor(colors.black)
+	monitor.setTextColor(colors.white)
 end
 
 local function showCalculationScreen(amount)
