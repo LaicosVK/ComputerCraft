@@ -1,161 +1,160 @@
--- === Credit Trade Machine ===
+-- === CONFIGURATION ===
+local TRADE_VALUES = {
+    ["minecraft:diamond"] = 100,
+    ["minecraft:emerald"] = 80,
+    ["minecraft:gold_ingot"] = 25,
+    ["minecraft:iron_ingot"] = 10
+}
 
--- === Peripheral Setup ===
-local monitor = peripheral.wrap("back")
-local barrel = peripheral.find("barrel")
-local chest = peripheral.find("chest")
-local diskDrive = peripheral.find("drive")
-
--- === Open Wireless Modem ===
-for _, side in ipairs({ "top", "bottom", "left", "right", "front", "back" }) do
-    if peripheral.getType(side) == "modem" and peripheral.call(side, "isWireless") then
-        rednet.open(side)
-        print("Wireless modem opened on: " .. side)
-        break
-    end
-end
-
--- === Helper Functions ===
-
+-- === UTILITIES ===
 local function debug(msg)
     print("[DEBUG] " .. msg)
 end
 
-local function centerText(line, text)
-    local w, _ = monitor.getSize()
-    local x = math.floor((w - #text) / 2) + 1
-    monitor.setCursorPos(x, line)
-    monitor.write(text)
-end
-
-local function clearScreen()
-    monitor.setBackgroundColor(colors.black)
-    monitor.setTextColor(colors.white)
-    monitor.clear()
-end
-
-local function waitForButton(buttons)
-    while true do
-        local event, side, x, y = os.pullEvent("monitor_touch")
-        for _, btn in ipairs(buttons) do
-            local bx = math.floor((monitor.getSize() - #btn.label - 4) / 2) + 1
-            if y == btn.y and x >= bx and x <= bx + #btn.label + 3 then
-                return btn.label
-            end
+local function findPeripheralByType(typeFilter)
+    for _, name in ipairs(peripheral.getNames()) do
+        if peripheral.getType(name) == typeFilter then
+            debug("Found peripheral of type '" .. typeFilter .. "' at: " .. name)
+            return peripheral.wrap(name), name
         end
     end
+    return nil
 end
 
-local function readPlayerKey()
-    if not diskDrive or not diskDrive.isDiskPresent() then
-        debug("No disk present.")
+-- === INITIALIZATION ===
+local monitor = peripheral.find("monitor")
+local modem = peripheral.find("modem", function(_, obj) return obj.isWireless and obj.isWireless() end)
+
+if not monitor or not modem then
+    error("Monitor or wireless modem not found")
+end
+
+rednet.open(peripheral.getName(modem))
+debug("Wireless modem opened on " .. peripheral.getName(modem))
+
+local barrel = nil
+local secureChest = nil
+local drive = nil
+for _, name in ipairs(peripheral.getNames()) do
+    local t = peripheral.getType(name)
+    if t == "drive" then
+        drive = peripheral.wrap(name)
+    elseif t:find("barrel") then
+        barrel = peripheral.wrap(name)
+    elseif t:find("chest") or t:find("ender_storage") then
+        secureChest = peripheral.wrap(name)
+    end
+end
+
+if not (barrel and secureChest and drive) then
+    error("One or more peripherals not found (barrel, chest, drive)")
+end
+
+-- === FUNCTIONS ===
+local function getMountPath()
+    if not drive.isDiskPresent() then
         return nil
     end
+    return drive.getMountPath()
+end
 
-    local mountPath = diskDrive.getMountPath()
-    if not mountPath or not fs.exists(mountPath .. "/player.key") then
-        debug("player.key file not found.")
+local function getKey()
+    local mountPath = getMountPath()
+    if not mountPath then
+        debug("Keine Diskette erkannt")
         return nil
     end
-
-    local f = fs.open(mountPath .. "/player.key", "r")
+    local path = mountPath .. "/player.key"
+    if not fs.exists(path) then
+        debug("player.key fehlt")
+        return nil
+    end
+    local f = fs.open(path, "r")
     local key = f.readAll()
     f.close()
+    debug("Key gelesen: " .. key)
     return key
 end
 
-local values = {
-    ["minecraft:diamond"] = 10,
-    ["minecraft:emerald"] = 8,
-    ["minecraft:gold_ingot"] = 5,
-    ["minecraft:iron_ingot"] = 2
-}
-
-local function calculateValue()
+local function calculateCredit()
+    local items = barrel.list()
     local total = 0
-    for slot, item in pairs(barrel.list()) do
-        if values[item.name] then
-            total = total + values[item.name] * item.count
-        end
+    for slot, item in pairs(items) do
+        local value = TRADE_VALUES[item.name] or 0
+        total = total + (value * item.count)
     end
-    return total
+    return total, items
 end
 
-local function transferItems()
-    for slot, item in pairs(barrel.list()) do
-        barrel.pushItems(peripheral.getName(chest), slot)
+local function moveItemsToSecureStorage(items)
+    for slot, item in pairs(items) do
+        barrel.pushItems(peripheral.getName(secureChest), slot, item.count)
     end
 end
 
--- === UI Screens ===
-
-local function drawMainScreen()
-    clearScreen()
-    centerText(2, "=== Credits kaufen ===")
-    centerText(4, "Bitte Items in die Tonne legen")
-    centerText(6, "[ Berechnen ]")
+local function sendCreditUpdate(key, amount)
+    rednet.broadcast({ type = "credit_action", action = "add", key = key, amount = amount }, "casino")
+    local id, msg = rednet.receive("casino", 5)
+    if msg and msg.ok then
+        return true, msg.newBalance
+    else
+        return false, nil
+    end
 end
 
-local function drawConfirmScreen(amount)
-    clearScreen()
-    centerText(2, "Gefundener Wert: " .. amount .. " Credits")
-    centerText(4, "[ Bestätigen ]")
-    centerText(6, "[ Abbrechen ]")
+local function drawCentered(text, y)
+    local w, _ = monitor.getSize()
+    local x = math.floor((w - #text) / 2) + 1
+    monitor.setCursorPos(x, y)
+    monitor.write(text)
 end
 
-local function drawThanksScreen(balance)
-    clearScreen()
-    centerText(2, "Danke für deinen Einkauf!")
-    centerText(4, "Neuer Kontostand: " .. balance .. " Credits")
+local function showMainScreen()
+    monitor.clear()
+    drawCentered("Willkommen im Credit Trade Terminal", 2)
+    drawCentered("[Berechnen]", 5)
+end
+
+local function showCalculationScreen(amount)
+    monitor.clear()
+    drawCentered("Gefundene Credits: " .. amount, 2)
+    drawCentered("[Bestätigen]", 4)
+    drawCentered("[Abbrechen]", 6)
+end
+
+local function showThanks(balance)
+    monitor.clear()
+    drawCentered("Danke für deine Spende!", 2)
+    drawCentered("Kontostand: " .. balance .. " Credits", 4)
     sleep(3)
 end
 
-local function drawError(message)
-    clearScreen()
-    centerText(3, "[Fehler] " .. message)
-    sleep(2)
-end
-
--- === Main Logic ===
-
+-- === MAIN LOOP ===
 while true do
-    drawMainScreen()
-    local button = waitForButton({ { label = "Berechnen", y = 6 } })
-
-    if button == "Berechnen" then
-        local initial = calculateValue()
-        if initial == 0 then
-            drawError("Keine gültigen Items.")
+    showMainScreen()
+    local _, _, x, y = os.pullEvent("monitor_touch")
+    if y == 5 then
+        local key = getKey()
+        if not key then
+            drawCentered("Fehlender oder ungültiger Key!", 8)
+            sleep(2)
         else
-            drawConfirmScreen(initial)
-            local confirm = waitForButton({
-                { label = "Bestätigen", y = 4 },
-                { label = "Abbrechen", y = 6 }
-            })
-
-            if confirm == "Bestätigen" then
-                local final = calculateValue()
-                if final ~= initial then
-                    drawError("Items wurden verändert!")
+            local credits, items = calculateCredit()
+            showCalculationScreen(credits)
+            local _, _, x2, y2 = os.pullEvent("monitor_touch")
+            if y2 == 4 then
+                local recalc, currentItems = calculateCredit()
+                if recalc ~= credits then
+                    drawCentered("Inhalt geändert. Abbruch.", 8)
+                    sleep(2)
                 else
-                    local key = readPlayerKey()
-                    if not key then
-                        drawError("Keine Karte erkannt.")
+                    local ok, newBal = sendCreditUpdate(key, credits)
+                    if ok then
+                        moveItemsToSecureStorage(currentItems)
+                        showThanks(newBal)
                     else
-                        rednet.broadcast({
-                            type = "credit_action",
-                            action = "add",
-                            key = key,
-                            amount = final
-                        }, "casino")
-
-                        local sender, response = rednet.receive("casino", 5)
-                        if response and response.ok and response.newBalance then
-                            transferItems()
-                            drawThanksScreen(response.newBalance)
-                        else
-                            drawError("Serverfehler.")
-                        end
+                        drawCentered("Fehler beim Senden", 8)
+                        sleep(2)
                     end
                 end
             end
