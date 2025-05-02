@@ -108,6 +108,19 @@ local function drawCentered(text, y)
     monitor.write(text)
 end
 
+local function drawCenteredTradeValues(monitor, tradeValues, startY)
+    local w, _ = monitor.getSize()
+    local y = startY
+
+    for item, value in pairs(tradeValues) do
+        local text = item .. ": " .. value .. " Credits"
+        local x = math.floor((w - #text) / 2) + 1
+        monitor.setCursorPos(x, y)
+        monitor.write(text)
+        y = y + 1
+    end
+end
+
 local function showMainScreen()
     monitor.clear()
     drawCentered("Willkommen", 2)
@@ -131,19 +144,6 @@ local function showThanks(balance)
     drawCentered("Danke für deine Spende!", 2)
     drawCentered("Kontostand: " .. balance .. " Credits", 4)
     sleep(3)
-end
-
-local function drawCenteredTradeValues(monitor, tradeValues, startY)
-    local w, _ = monitor.getSize()
-    local y = startY
-
-    for item, value in pairs(tradeValues) do
-        local text = item .. ": " .. value .. " Credits"
-        local x = math.floor((w - #text) / 2) + 1
-        monitor.setCursorPos(x, y)
-        monitor.write(text)
-        y = y + 1
-    end
 end
 
 -- === MAIN LOOP ===
