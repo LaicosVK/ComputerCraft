@@ -148,8 +148,14 @@ end
 local function showCalculationScreen(amount)
     monitor.clear()
     drawCentered("Gefundene Credits: " .. amount, 2)
+	monitor.setBackgroundColor(colors.green)
+	monitor.setTextColor(colors.black)
     drawCentered("[Bestätigen]", 4)
+	monitor.setBackgroundColor(colors.red)
+	monitor.setTextColor(colors.black)
     drawCentered("[Abbrechen]", 6)
+	monitor.setBackgroundColor(colors.black)
+	monitor.setTextColor(colors.white)
 end
 
 local function showThanks(balance)
@@ -163,7 +169,7 @@ end
 while true do
     showMainScreen()
     local _, _, x, y = os.pullEvent("monitor_touch")
-    if y == 5 then
+    if y == 9 then
         local key = getKey()
         if not key then
             drawCentered("Fehlender oder ungültiger Key!", 8)
