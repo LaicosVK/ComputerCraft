@@ -93,7 +93,7 @@ local function moveItemsToSecureStorage(items)
 end
 
 local function sendCreditUpdate(key, amount)
-    rednet.broadcast({ type = "credit_action", action = "add", key = key, amount = amount }, "casino")
+    rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
     local id, msg = rednet.receive("casino", 5)
     if msg and msg.ok then
         return true, msg.newBalance

@@ -47,7 +47,7 @@ local function loadOrCreateConfig()
         end
         return true
     else
-        log("Keine Konfig gefunden. Erstelle Standarddatei.")
+        --log("Keine Konfig gefunden. Erstelle Standarddatei.")
         writeFile(configFile, textutils.serialize({
             fileName = "main",
             folderName = ""
@@ -69,12 +69,12 @@ local function checkAndQueueStartupUpdate()
     local remote = readFile(temp)
     local current = readFile("startup.lua") or ""
     if remote ~= current then
-        log("⚠️ Neues Startup-Update gefunden. Update wird beim nächsten Neustart angewendet.")
+        log("!!\n!!\nNeues Startup-Update gefunden. Update wird beim nächsten Neustart angewendet.\n!!\n!!")
         fs.delete("startup_update.lua")
         fs.move(temp, "startup_update.lua")
     else
         fs.delete(temp)
-        log("Startup ist aktuell.")
+        --log("Startup ist aktuell.")
     end
 end
 
@@ -91,7 +91,7 @@ end
 -- === MAIN LOGIC ===
 local function main()
     if not http then
-        log("HTTP ist nicht aktiviert.")
+        --log("HTTP ist nicht aktiviert.")
         return
     end
 
@@ -111,12 +111,12 @@ local function main()
         local remote = readFile(temp)
         local localContent = readFile(mainPath) or ""
         if remote ~= localContent then
-            log("⚠️ Update für " .. mainPath .. " gefunden.")
+            log("!!\n!!\nUpdate für " .. mainPath .. " gefunden.\n!!\n!!")
             if fs.exists(mainPath) then fs.delete(mainPath) end
             fs.move(temp, mainPath)
         else
             fs.delete(temp)
-            log("Programm ist aktuell.")
+            --log("Programm ist aktuell.")
         end
     else
         log("Konnte Hauptprogramm nicht aktualisieren.")
