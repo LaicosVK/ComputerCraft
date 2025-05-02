@@ -1,7 +1,6 @@
 -- === CONFIGURATION ===
 local TRADE_VALUES = {
     ["minecraft:diamond"] = 100,
-    ["minecraft:emerald"] = 80,
     ["minecraft:gold_ingot"] = 25,
     ["minecraft:iron_ingot"] = 10
 }
@@ -111,8 +110,10 @@ end
 
 local function showMainScreen()
     monitor.clear()
-    drawCentered("Willkommen im Credit Trade Terminal", 2)
-    drawCentered("[Berechnen]", 5)
+    drawCentered("Willkommen", 2)
+    drawCentered("Kaufe Credits!", 3)
+    drawCentered(TRADE_VALUES, 5)
+    drawCentered("[Berechnen]", 7)
 end
 
 local function showCalculationScreen(amount)
