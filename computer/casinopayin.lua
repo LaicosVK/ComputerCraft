@@ -150,7 +150,7 @@ local function showMainScreen()
     drawCenteredTradeValuesSorted(monitor, TRADE_VALUES, 5)
 	monitor.setBackgroundColor(colors.green)
 	monitor.setTextColor(colors.black)
-    drawCentered("[Berechnen]", 9)
+    drawCentered("[Berechnen]", 10)
 	monitor.setBackgroundColor(colors.black)
 	monitor.setTextColor(colors.white)
 end
@@ -179,7 +179,7 @@ end
 while true do
     showMainScreen()
     local _, _, x, y = os.pullEvent("monitor_touch")
-    if y == 9 then
+    if y == 10 then
         local key = getKey()
         if not key then
             drawCentered("Fehlender oder ungültiger Key!", 8)
