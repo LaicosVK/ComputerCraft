@@ -13,10 +13,17 @@ local function fileExists(path)
 end
 
 local function readFile(path)
+    if not fs.exists(path) then return nil end
     local h = fs.open(path, "r")
     local data = h.readAll()
     h.close()
     return data
+end
+
+local function writeFile(path, content)
+    local h = fs.open(path, "w")
+    h.write(content)
+    h.close()
 end
 
 local function downloadFile(url, destination)
@@ -25,7 +32,7 @@ local function downloadFile(url, destination)
         shell.run("wget", url, "temp_dl")
     end)
     if not ok or not fs.exists("temp_dl") then
-        log("Fehler beim Herunterladen von: " .. url)
+        log("Download failed from: " .. url)
         return false
     end
     if fs.exists(destination) then fs.delete(destination) end
@@ -36,78 +43,75 @@ end
 -- === CONFIG LOGIC ===
 local function loadOrCreateConfig()
     if fs.exists(configFile) then
-        local ok, err = pcall(function()
-            local f = fs.open(configFile, "r")
-            local config = textutils.unserialize(f.readAll())
-            f.close()
+        local content = readFile(configFile)
+        if content then
+            local config = textutils.unserialize(content)
             if type(config) == "table" then
-                if config.fileName then fileName = config.fileName end
-                if config.folderName then folderName = config.folderName end
+                fileName = config.fileName or fileName
+                folderName = config.folderName or folderName
+            else
+                log("Config konnte nicht gelesen werden.")
             end
-        end)
-        if not ok then
-            log("Fehler beim Laden der Konfiguration: " .. tostring(err))
+        else
+            log("Config-Datei ist leer oder unlesbar.")
         end
+        return true
     else
-        log("Keine Konfiguration gefunden. Erstelle Standarddatei.")
-        local f = fs.open(configFile, "w")
-        f.write(textutils.serialize({
+        log("Keine Konfiguration gefunden. Erstelle Standarddatei...")
+        writeFile(configFile, textutils.serialize({
             fileName = "main",
             folderName = ""
         }))
-        f.close()
         log("Bitte 'startup.cfg' bearbeiten und danach neu starten.")
         return false
     end
-    return true
 end
 
 -- === UPDATE CHECKER ===
 local function checkForUpdate(scriptPath, remoteURL)
-    log("Überprüfe Updates für '" .. scriptPath .. "' ...")
-    local remoteOK = downloadFile(remoteURL, "temp_dl")
-    if not remoteOK then
+    log("Prüfe Update für '" .. scriptPath .. "' ...")
+    if not downloadFile(remoteURL, "temp_dl") then
         log("Updateprüfung fehlgeschlagen.")
         return false
     end
 
     local remoteContent = readFile("temp_dl")
-    local localContent = fileExists(scriptPath) and readFile(scriptPath) or ""
+    local localContent = readFile(scriptPath) or ""
 
     if remoteContent ~= localContent then
-        log("⚠️ Update verfügbar! Ersetze '" .. scriptPath .. "' ...")
-        if fileExists(scriptPath) then fs.delete(scriptPath) end
+        log("⚠️ Update gefunden! Ersetze '" .. scriptPath .. "' ...")
+        if fs.exists(scriptPath) then fs.delete(scriptPath) end
         fs.move("temp_dl", scriptPath)
         return true
     else
-        log("Keine Aktualisierung notwendig für '" .. scriptPath .. "'.")
+        log("'" .. scriptPath .. "' ist aktuell.")
         fs.delete("temp_dl")
         return false
     end
 end
 
--- === MAIN EXECUTION ===
+-- === MAIN ===
 local function main()
     if not http then
-        log("HTTP API ist nicht aktiviert. Beende ...")
+        log("HTTP API ist deaktiviert. Beende ...")
         return
     end
 
     if not loadOrCreateConfig() then return end
 
-    -- Update self
+    -- Update this startup script
     local startupURL = "https://raw.githubusercontent.com/LaicosVK/ComputerCraft/refs/heads/main/startup.lua"
     checkForUpdate("startup.lua", startupURL)
 
-    -- Update target program
-    local programPath = fileName .. ".lua"
+    -- Update main program
+    local scriptPath = fileName .. ".lua"
     local programURL = "https://raw.githubusercontent.com/LaicosVK/ComputerCraft/refs/heads/main/" .. folderName .. fileName .. ".lua"
-    checkForUpdate(programPath, programURL)
+    checkForUpdate(scriptPath, programURL)
 
     -- Run main program
-    log("Starte '" .. programPath .. "' ...")
+    log("Starte '" .. scriptPath .. "' ...")
     sleep(1)
-    shell.run(programPath)
+    shell.run(scriptPath)
 end
 
 main()
