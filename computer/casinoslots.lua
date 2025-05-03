@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "8"
+local version = "9"
 
 -- === Setup ===
 local modemSide = "top"
@@ -177,7 +177,7 @@ local function spinSlots()
         for i = 1, 3 do
             local char = spinSymbols[i].char
             if frame > spinCounts[i] then
-                char = "•" .. char .. "•"  -- Add dots for locked slots
+                char = "." .. char .. "."  -- Add dots for locked slots
             else
                 char = " " .. char .. " "  -- Keep same width with padding
             end
