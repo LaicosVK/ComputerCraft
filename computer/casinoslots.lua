@@ -11,6 +11,7 @@ local modemSide = "top"
 local diskDrive = peripheral.find("drive")
 local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
+local speaker = peripheral.wrap("right")
 rednet.open(modemSide)
 
 -- === Symbols & Weights ===
@@ -178,7 +179,8 @@ local function spinSlots()
             end
         end
         centerText(6, display)
-        sleep(0.1)
+        speaker.playSound("minecraft:block.note_block.pling")
+		sleep(0.2)
     end
 
     -- Speichere das finale Ergebnis
@@ -206,6 +208,7 @@ end
 
 local function showResult(result, mult, payout, balance)
     monitor.clear()
+	speaker.playSound("minecraft:entity.experience_orb.pickup")
     centerText(2, "Result:")
     local line = 6
     centerText(line, result[1].char .. " | " .. result[2].char .. " | " .. result[3].char)
