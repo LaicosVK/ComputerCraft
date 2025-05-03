@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "10"
+local version = "11"
 
 -- === Setup ===
 local modemSide = "top"
@@ -188,7 +188,7 @@ local function spinSlots()
         speaker.playSound("block.bamboo.place")
 
         for i = 1, 3 do
-            if frame == spinCounts[i]-1 then
+            if frame == spinCounts[i]+1 then
                 speaker.playSound(lockSounds[i])
             end
         end
