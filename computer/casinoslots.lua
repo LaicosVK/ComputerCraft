@@ -179,7 +179,7 @@ local function spinSlots()
             end
         end
         centerText(6, display)
-        speaker.playSound("minecraft:block.note_block.pling")
+        speaker.playSound("minecraft:entity.villager.yes")
 		sleep(0.5)
     end
 
