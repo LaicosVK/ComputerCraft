@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "9"
+local version = "10"
 
 -- === Setup ===
 local modemSide = "top"
