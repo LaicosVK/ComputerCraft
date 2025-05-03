@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "11"
+local version = "12"
 
 -- === Setup ===
 local modemSide = "top"
@@ -161,6 +161,7 @@ local function spinSlots()
     local spinSymbols = {}
 
     local spinCounts = { 10, 20, 30 }
+    local spinChars = { "|", "/", "-", "\\" }  -- Animation frames for the separator
 
     for i = 1, 3 do
         spinSymbols[i] = getRandomSymbol()
@@ -174,21 +175,23 @@ local function spinSlots()
         end
 
         local displayParts = {}
+        local sep = spinChars[(frame - 1) % #spinChars + 1]  -- Cycle through the spin characters
+
         for i = 1, 3 do
             local char = spinSymbols[i].char
             if frame > spinCounts[i] then
-                char = "." .. char .. "."  -- Add dots for locked slots
+                char = "." .. char .. "."  -- Locked slot
             else
-                char = " " .. char .. " "  -- Keep same width with padding
+                char = " " .. char .. " "  -- Spinning slot
             end
             table.insert(displayParts, char)
         end
 
-        centerText(6, table.concat(displayParts, "|"))
+        centerText(6, table.concat(displayParts, sep))  -- Use animated separator
         speaker.playSound("block.bamboo.place")
 
         for i = 1, 3 do
-            if frame == spinCounts[i]+1 then
+            if frame == spinCounts[i] + 1 then
                 speaker.playSound(lockSounds[i])
             end
         end
@@ -203,6 +206,7 @@ local function spinSlots()
 
     return result
 end
+
 
 
 local function evaluate(result)
