@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "4"
+local version = "5"
 
 -- === Setup ===
 local modemSide = "top"
@@ -19,6 +19,12 @@ local symbolPool = {
     { char = "\x02", tier = "small", weight = 50 },
     { char = "\x0F", tier = "medium", weight = 30 },
     { char = "\x03", tier = "big", weight = 20 },
+}
+
+local lockSounds = {
+    "minecraft:entity.villager.yes",
+    "minecraft:block.anvil.land",
+    "minecraft:entity.experience_orb.pickup"
 }
 
 -- === Weighted Random Symbol ===
@@ -186,11 +192,11 @@ local function spinSlots()
         -- Wenn eine Spalte gerade stoppt, spiele anderes Sound
         for i = 1, 3 do
             if frame == spinCounts[i] then
-                speaker.playSound("minecraft:entity.villager.yes")
+                speaker.playSound(lockSounds[i])
             end
         end
 
-        sleep(0.2)
+        sleep(0.5)
     end
 
     -- Speichere das finale Ergebnis
