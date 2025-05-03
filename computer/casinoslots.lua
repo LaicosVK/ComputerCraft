@@ -173,19 +173,18 @@ local function spinSlots()
             end
         end
 
-        local display = ""
+        local displayParts = {}
         for i = 1, 3 do
-            local symbolChar = spinSymbols[i].char
+            local char = spinSymbols[i].char
             if frame > spinCounts[i] then
-                symbolChar = "-" .. symbolChar .. "-"
+                char = "•" .. char .. "•"  -- Add dots for locked slots
+            else
+                char = " " .. char .. " "  -- Keep same width with padding
             end
-            display = display .. symbolChar
-            if i < 3 then
-                display = display .. " | "
-            end
+            table.insert(displayParts, char)
         end
 
-        centerText(6, display)
+        centerText(6, table.concat(displayParts, "|"))
         speaker.playSound("block.bamboo.place")
 
         for i = 1, 3 do
@@ -204,7 +203,6 @@ local function spinSlots()
 
     return result
 end
-
 
 
 local function evaluate(result)
