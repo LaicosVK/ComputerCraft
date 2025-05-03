@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "6"
+local version = "7"
 
 -- === Setup ===
 local modemSide = "top"
@@ -225,15 +225,16 @@ end
 
 local function showResult(result, mult, payout, balance)
     monitor.clear()
-	speaker.playSound("minecraft:entity.experience_orb.pickup")
     centerText(2, "Result:")
     local line = 6
     centerText(line, result[1].char .. " | " .. result[2].char .. " | " .. result[3].char)
     line = line + 4
     if mult > 0 then
         centerText(line, "Du gewinnst " .. payout .. " credits!")
+		speaker.playSound("minecraft:entity.experience_orb.pickup")
     else
         centerText(line, "Schade...")
+		speaker.playSound("minecraft:entity.villager.no")
     end
 	line = line + 2
 	local new_balance = balance - cost + payout
