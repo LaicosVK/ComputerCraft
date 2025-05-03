@@ -159,22 +159,20 @@ local function spinSlots()
 
     local result = { nil, nil, nil }
     local spinSymbols = {}
+
     local spinCounts = { 10, 20, 30 }
 
-    -- Initialisiere Symbole
     for i = 1, 3 do
         spinSymbols[i] = getRandomSymbol()
     end
 
     for frame = 1, spinCounts[3] do
-        -- Drehe Spalten
         for i = 1, 3 do
             if frame <= spinCounts[i] then
                 spinSymbols[i] = getRandomSymbol()
             end
         end
 
-        -- 🎰 Anzeige auf Monitor mit "-" bei fixierten Slots
         local display = ""
         for i = 1, 3 do
             local symbolChar = spinSymbols[i].char
@@ -182,12 +180,14 @@ local function spinSlots()
                 symbolChar = "-" .. symbolChar .. "-"
             end
             display = display .. symbolChar
-            if i < 3 then display = display .. " | " end
+            if i < 3 then
+                display = display .. " | "
+            end
         end
-        centerText(6, display)
 
-        -- 🔊 Geräusche
+        centerText(6, display)
         speaker.playSound("block.bamboo.place")
+
         for i = 1, 3 do
             if frame == spinCounts[i] then
                 speaker.playSound(lockSounds[i])
@@ -197,7 +197,6 @@ local function spinSlots()
         sleep(0.5)
     end
 
-    -- Speichere Endergebnis
     for i = 1, 3 do
         result[i] = spinSymbols[i]
         debugMessage("🎰 Slot " .. i .. ": " .. result[i].char)
