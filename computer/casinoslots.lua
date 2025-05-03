@@ -146,10 +146,10 @@ local function addCredits(key, amount)
     return false
 end
 
--- === Slot Logic mit Animation ===
+-- === Slot Logic mit Animation und Sounds ===
 local function spinSlots()
-	monitor.clear()
-    debugMessage("Starte Slot-Animation...")
+    monitor.clear()
+    debugMessage("🎰 Starte Slot-Animation...")
 
     local result = { nil, nil, nil }
     local spinSymbols = {}
@@ -163,7 +163,7 @@ local function spinSlots()
     local spinCounts = { 10, 20, 30 }
 
     for frame = 1, spinCounts[3] do
-        -- Erzeuge neue Symbole für alle drei, solange sie nicht "stehen bleiben"
+        -- Neue Symbole solange Spalte noch dreht
         for i = 1, 3 do
             if frame <= spinCounts[i] then
                 spinSymbols[i] = getRandomSymbol()
@@ -179,19 +179,29 @@ local function spinSlots()
             end
         end
         centerText(6, display)
-        speaker.playSound("minecraft:entity.villager.yes")
-		sleep(0.5)
+
+        -- 🎵 Spiele "Pling"-Sound pro Frame
+        speaker.playSound("minecraft:block.note_block.pling")
+
+        -- Wenn eine Spalte gerade stoppt, spiele anderes Sound
+        for i = 1, 3 do
+            if frame == spinCounts[i] then
+                speaker.playSound("minecraft:entity.villager.yes")
+            end
+        end
+
+        sleep(0.2)
     end
 
     -- Speichere das finale Ergebnis
     for i = 1, 3 do
-		speaker.playSound("minecraft:entity.villager.yes")
         result[i] = spinSymbols[i]
-        debugMessage("Slot " .. i .. ": " .. result[i].char)
+        debugMessage("🎰 Slot " .. i .. ": " .. result[i].char)
     end
 
     return result
 end
+
 
 local function evaluate(result)
     debugMessage("Evaluating result...")
