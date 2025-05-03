@@ -188,7 +188,7 @@ local function spinSlots()
         speaker.playSound("block.bamboo.place")
 
         for i = 1, 3 do
-            if frame == spinCounts[i] then
+            if frame == spinCounts[i]-1 then
                 speaker.playSound(lockSounds[i])
             end
         end
