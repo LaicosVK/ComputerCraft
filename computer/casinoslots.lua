@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "7"
+local version = "8"
 
 -- === Setup ===
 local modemSide = "top"
@@ -159,37 +159,35 @@ local function spinSlots()
 
     local result = { nil, nil, nil }
     local spinSymbols = {}
+    local spinCounts = { 10, 20, 30 }
 
-    -- Initialisiere alle 3 Spalten mit Zufallswerten
+    -- Initialisiere Symbole
     for i = 1, 3 do
         spinSymbols[i] = getRandomSymbol()
     end
 
-    -- Anzahl an Wiederholungen für jeden Abschnitt
-    local spinCounts = { 10, 20, 30 }
-
     for frame = 1, spinCounts[3] do
-        -- Neue Symbole solange Spalte noch dreht
+        -- Drehe Spalten
         for i = 1, 3 do
             if frame <= spinCounts[i] then
                 spinSymbols[i] = getRandomSymbol()
             end
         end
 
-        -- Darstellung auf Zeile 6
+        -- 🎰 Anzeige auf Monitor mit "-" bei fixierten Slots
         local display = ""
         for i = 1, 3 do
-            display = display .. spinSymbols[i].char
-            if i < 3 then
-                display = display .. " | "
+            local symbolChar = spinSymbols[i].char
+            if frame > spinCounts[i] then
+                symbolChar = "-" .. symbolChar .. "-"
             end
+            display = display .. symbolChar
+            if i < 3 then display = display .. " | " end
         end
         centerText(6, display)
 
-        -- 🎵 Spiele "Pling"-Sound pro Frame
+        -- 🔊 Geräusche
         speaker.playSound("block.bamboo.place")
-
-        -- Wenn eine Spalte gerade stoppt, spiele anderes Sound
         for i = 1, 3 do
             if frame == spinCounts[i] then
                 speaker.playSound(lockSounds[i])
@@ -199,7 +197,7 @@ local function spinSlots()
         sleep(0.5)
     end
 
-    -- Speichere das finale Ergebnis
+    -- Speichere Endergebnis
     for i = 1, 3 do
         result[i] = spinSymbols[i]
         debugMessage("🎰 Slot " .. i .. ": " .. result[i].char)
@@ -207,6 +205,7 @@ local function spinSlots()
 
     return result
 end
+
 
 
 local function evaluate(result)
@@ -231,7 +230,7 @@ local function showResult(result, mult, payout, balance)
     line = line + 4
     if mult > 0 then
         centerText(line, "Du gewinnst " .. payout .. " credits!")
-		speaker.playSound("minecraft:entity.experience_orb.pickup")
+		speaker.playSound("minecraft:entity.villager.yes")
     else
         centerText(line, "Schade...")
 		speaker.playSound("minecraft:entity.villager.no")
