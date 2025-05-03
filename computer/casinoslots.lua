@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "5"
+local version = "6"
 
 -- === Setup ===
 local modemSide = "top"
@@ -22,9 +22,9 @@ local symbolPool = {
 }
 
 local lockSounds = {
-    "minecraft:entity.villager.yes",
-    "minecraft:block.anvil.land",
-    "minecraft:entity.experience_orb.pickup"
+    "block.chain.place",
+    "block.chain.place",
+    "block.chain.place"
 }
 
 -- === Weighted Random Symbol ===
@@ -187,7 +187,7 @@ local function spinSlots()
         centerText(6, display)
 
         -- 🎵 Spiele "Pling"-Sound pro Frame
-        speaker.playSound("minecraft:block.note_block.pling")
+        speaker.playSound("block.bamboo.place")
 
         -- Wenn eine Spalte gerade stoppt, spiele anderes Sound
         for i = 1, 3 do
