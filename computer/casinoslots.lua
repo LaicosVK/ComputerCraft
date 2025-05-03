@@ -160,7 +160,7 @@ local function spinSlots()
     end
 
     -- Anzahl an Wiederholungen für jeden Abschnitt
-    local spinCounts = { 10, 30, 60 }
+    local spinCounts = { 10, 20, 30 }
 
     for frame = 1, spinCounts[3] do
         -- Erzeuge neue Symbole für alle drei, solange sie nicht "stehen bleiben"
@@ -180,11 +180,12 @@ local function spinSlots()
         end
         centerText(6, display)
         speaker.playSound("minecraft:block.note_block.pling")
-		sleep(0.2)
+		sleep(0.5)
     end
 
     -- Speichere das finale Ergebnis
     for i = 1, 3 do
+		speaker.playSound("minecraft:entity.villager.yes")
         result[i] = spinSymbols[i]
         debugMessage("Slot " .. i .. ": " .. result[i].char)
     end
