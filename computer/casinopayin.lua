@@ -185,7 +185,7 @@ while true do
     if y == berechnenLine then
         local key = getKey()
         if not key then
-            drawCentered("Casinokarte fehlt!", 8)
+            drawCentered("Casinokarte fehlt!", 9)
             sleep(2)
         else
             local credits, items = calculateCredit()
