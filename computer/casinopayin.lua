@@ -138,7 +138,7 @@ local function drawCenteredTradeValuesSorted(monitor, tradeValues, startY)
     -- Draw each line nicely
     for _, entry in ipairs(items) do
         local displayName = formatItemName(entry.name)
-        local text = displayName .. ": " .. entry.value .. ""
+        local text = displayName .. ":" .. entry.value .. ""
         local x = math.floor((w - #text) / 2) + 1
         monitor.setCursorPos(x, y)
         monitor.write(text)
