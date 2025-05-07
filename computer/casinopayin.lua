@@ -135,7 +135,7 @@ local function drawCenteredTradeValuesSorted(monitor, tradeValues, startY)
     -- Draw each line nicely
     for _, entry in ipairs(items) do
         local displayName = formatItemName(entry.name)
-        local text = displayName .. ": " .. entry.value .. " Credits"
+        local text = displayName .. ": " .. entry.value .. ""
         local x = math.floor((w - #text) / 2) + 1
         monitor.setCursorPos(x, y)
         monitor.write(text)
@@ -145,9 +145,9 @@ end
 
 local function showMainScreen()
     monitor.clear()
-    drawCentered("Willkommen", 2)
-    drawCentered("Kaufe Credits!", 3)
-    drawCenteredTradeValuesSorted(monitor, TRADE_VALUES, 5)
+    -- drawCentered("Willkommen", 2)
+    drawCentered("Kaufe Credits!", 2)
+    drawCenteredTradeValuesSorted(monitor, TRADE_VALUES, 4)
 	monitor.setBackgroundColor(colors.green)
 	monitor.setTextColor(colors.black)
     drawCentered("[Berechnen]", 10)

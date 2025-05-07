@@ -160,7 +160,7 @@ local function spinSlots()
     local result = { nil, nil, nil }
     local spinSymbols = {}
 
-    local spinCounts = { 10, 20, 30 }
+    local spinCounts = { 11, 22, 33 }
     local spinChars = { "|", "/", "-", "\\" }  -- Animation frames for the separator
 
     for i = 1, 3 do
