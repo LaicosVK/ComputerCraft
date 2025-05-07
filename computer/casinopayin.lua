@@ -5,6 +5,8 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
+local berechnenLine = 11
+
 -- === UTILITIES ===
 local function debug(msg)
     print("[DEBUG] " .. msg)
@@ -150,7 +152,7 @@ local function showMainScreen()
     drawCenteredTradeValuesSorted(monitor, TRADE_VALUES, 4)
 	monitor.setBackgroundColor(colors.green)
 	monitor.setTextColor(colors.black)
-    drawCentered("[Berechnen]", 10)
+    drawCentered("[Berechnen]", berechnenLine)
 	monitor.setBackgroundColor(colors.black)
 	monitor.setTextColor(colors.white)
 end
@@ -179,7 +181,7 @@ end
 while true do
     showMainScreen()
     local _, _, x, y = os.pullEvent("monitor_touch")
-    if y == 10 then
+    if y == berechnenLine then
         local key = getKey()
         if not key then
             drawCentered("Fehlender oder ungültiger Key!", 8)
