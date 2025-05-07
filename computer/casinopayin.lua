@@ -1,6 +1,6 @@
 -- === CONFIGURATION ===
 local TRADE_VALUES = {
-	["minecraft:netherite_ingot"] = 500
+	["minecraft:netherite_ingot"] = 500,
     ["minecraft:diamond"] = 100,
     ["minecraft:gold_ingot"] = 25,
     ["minecraft:iron_ingot"] = 10
