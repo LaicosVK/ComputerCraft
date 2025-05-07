@@ -67,7 +67,7 @@ local function drawWelcomeScreen()
     monitor.clear()
     center("Willkommen", 2)
     center("im Casino!", 3)
-    drawButton("Registrieren", 5, colors.green)
+    drawButton("Registrieren", 7, colors.green)
 end
 
 local function drawInsertDiskScreen()
@@ -90,7 +90,7 @@ local function drawCompletionScreen()
     monitor.clear()
     center("Fertig!", 2)
     center("Viel Glück!", 3)
-    drawButton("OK", 5, colors.green)
+    drawButton("OK", 7, colors.green)
 end
 
 local function drawErrorScreen(message)
@@ -121,7 +121,7 @@ local function doRegistration()
             f.close()
             disk.setLabel(peripheral.getName(drive), "Casino Karte")
             drawCompletionScreen()
-            waitForButtons({ { label = "OK", y = 5 } })
+            waitForButtons({ { label = "OK", y = 7 } })
         else
             print("Fehler beim Schreiben auf Diskette.")
             drawErrorScreen("Schreibfehler auf Diskette!")
@@ -136,7 +136,7 @@ end
 while true do
     drawWelcomeScreen()
     local clicked = waitForButtons({
-        { label = "Registrieren", y = 5 }
+        { label = "Registrieren", y = 7 }
     })
 
     if disk.isPresent(peripheral.getName(drive)) and disk.hasData(peripheral.getName(drive)) then
