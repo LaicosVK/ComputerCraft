@@ -1,6 +1,8 @@
 -- === Multiplayer Blackjack Table ===
 -- Supports 1–4 players with disk drive card join and shared monitor interface
 
+print("v1")
+
 -- === CONFIGURATION ===
 local MONITOR_SIDE = "back"
 local MODEM_SIDE = "top"
