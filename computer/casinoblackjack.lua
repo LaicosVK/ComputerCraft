@@ -1,12 +1,12 @@
 -- === Multiplayer Blackjack Table ===
 -- Supports 1–4 players with disk drive card join and shared monitor interface
 
-print("v1")
+print("v2")
 
 -- === CONFIGURATION ===
-local MONITOR_SIDE = "back"
+local MONITOR_SIDE = "left"
 local MODEM_SIDE = "top"
-local PLAYER_SIDES = {"left", "right", "front", "bottom"} -- Each disk drive for players 1–4
+local PLAYER_SIDES = {"left", "left", "front", "bottom"} -- Each disk drive for players 1–4
 local CHANNEL = "blackjack"
 local JOIN_BUTTON_COLOR = colors.lime
 
