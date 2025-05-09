@@ -1,3 +1,5 @@
+local size = 1.3
+
 local bigfont = require "bigfont"
 local mon = peripheral.wrap("back")
 
@@ -22,7 +24,7 @@ local x = math.floor((w * 6 - textWidth) / 2 / charWidth) + 1  -- 6 pixels per c
 
 -- Draw big "CAUTION"
 mon.setTextColor(colors.red)
-bigfont.writeOn(mon, bigText, x, 2, scale)
+bigfont.writeOn(mon, size, bigText, x, scale)
 
 -- Draw normal small text
 mon.setTextColor(colors.white)
