@@ -92,6 +92,7 @@ end
 
 local function moveItemsToSecureStorage(items)
     for slot, item in pairs(items) do
+		print(secureChest)
         barrel.pushItems(peripheral.getName(secureChest), slot, item.count)
     end
 end
