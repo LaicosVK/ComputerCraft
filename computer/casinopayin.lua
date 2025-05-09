@@ -6,7 +6,7 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v4")
+print("v5")
 
 local berechnenLine = 11
 
@@ -93,7 +93,7 @@ end
 local function moveItemsToSecureStorage(items)
     for slot, item in pairs(items) do
 		print(secureChest)
-        barrel.pushItems(peripheral.getName(secureChest), slot, item.count)
+        barrel.pushItems(secureChest, slot, item.count)
     end
 end
 
