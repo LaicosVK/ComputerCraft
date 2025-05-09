@@ -36,7 +36,6 @@ debug("Wireless modem opened on " .. peripheral.getName(modem))
 
 local barrel = nil
 local secureChest = nil
-print(barrel .. " | " .. secureChest)
 local drive = nil
 for _, name in ipairs(peripheral.getNames()) do
     local t = peripheral.getType(name)
@@ -48,6 +47,7 @@ for _, name in ipairs(peripheral.getNames()) do
         secureChest = peripheral.wrap(name)
     end
 end
+print(barrel .. " | " .. secureChest)
 
 if not (barrel and secureChest and drive) then
     error("One or more peripherals not found (barrel, chest, drive)")
