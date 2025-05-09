@@ -44,7 +44,7 @@ for _, name in ipairs(peripheral.getNames()) do
         drive = peripheral.wrap(name)
     elseif t:find("barrel") then
         barrel = peripheral.wrap(name)
-    elseif t:find("chest") or t:find("ender_storage") then
+    elseif t:find("Diamond Chest") or t:find("ender_storage") then
         secureChest = peripheral.wrap(name)
     end
 end
