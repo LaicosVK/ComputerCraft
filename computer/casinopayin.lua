@@ -6,7 +6,7 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v1")
+print("v2")
 
 local berechnenLine = 11
 
@@ -49,7 +49,6 @@ for _, name in ipairs(peripheral.getNames()) do
         secureChest = peripheral.wrap(name)
     end
 end
-print(barrel .. " | " .. secureChest)
 
 if not (barrel and secureChest and drive) then
     error("One or more peripherals not found (barrel, chest, drive)")
