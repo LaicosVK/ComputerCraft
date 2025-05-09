@@ -6,7 +6,7 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v2")
+print("v3")
 
 local berechnenLine = 11
 
