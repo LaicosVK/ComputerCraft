@@ -147,8 +147,8 @@ end
 while true do
     monitor.clear()
     center("Casino Terminal", 1)
-    drawButton("+5 Credits", 4, colors.green)
-    drawButton("-5 Credits", 6, colors.red)
+    drawButton("+50 Credits", 4, colors.green)
+    drawButton("-50 Credits", 6, colors.red)
 
     local clicked = waitForButtons({
         { label = "+5 Credits", y = 4 },
