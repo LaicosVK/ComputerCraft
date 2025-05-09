@@ -36,6 +36,7 @@ debug("Wireless modem opened on " .. peripheral.getName(modem))
 
 local barrel = nil
 local secureChest = nil
+print(barrel .. " | " .. secureChest)
 local drive = nil
 for _, name in ipairs(peripheral.getNames()) do
     local t = peripheral.getType(name)
