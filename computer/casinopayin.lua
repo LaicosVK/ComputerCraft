@@ -6,7 +6,7 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v3")
+print("v4")
 
 local berechnenLine = 11
 
@@ -46,7 +46,7 @@ for _, name in ipairs(peripheral.getNames()) do
     elseif t:find("barrel") then
         barrel = peripheral.wrap(name)
     elseif t:find("chest") or t:find("ender_storage") then
-        secureChest = peripheral.wrap(name)
+        secureChest = name
     end
 end
 
