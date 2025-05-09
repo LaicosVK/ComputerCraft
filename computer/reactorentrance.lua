@@ -5,14 +5,27 @@ mon.setBackgroundColor(colors.black)
 mon.clear()
 mon.setTextScale(1)
 
--- Draw big "CAUTION" in red, centered
-mon.setTextColor(colors.red)
-bigfont.writeCentered(mon, "CAUTION", 2, 0.5)
-
--- Draw small "Enter at your own risk" in white, centered
-mon.setTextColor(colors.white)
+-- Get monitor size
 local w, _ = mon.getSize()
-local text = "Enter at your own risk"
-local x = math.floor((w - #text) / 2) + 1
-mon.setCursorPos(x, 8)
-mon.write(text)
+
+-- Text to display
+local bigText = "CAUTION"
+local smallText = "Enter at your own risk"
+
+-- BigFont width per character (scale 0.5 = 4 pixels per char)
+local charWidth = 4  -- for scale = 0.5
+local scale = 0.5
+
+-- Calculate width in pixels and center X
+local textWidth = #bigText * charWidth
+local x = math.floor((w * 6 - textWidth) / 2 / charWidth) + 1  -- 6 pixels per char cell
+
+-- Draw big "CAUTION"
+mon.setTextColor(colors.red)
+bigfont.writeOn(mon, bigText, x, 2, scale)
+
+-- Draw normal small text
+mon.setTextColor(colors.white)
+local x2 = math.floor((w - #smallText) / 2) + 1
+mon.setCursorPos(x2, 8)
+mon.write(smallText)
