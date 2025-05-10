@@ -7,7 +7,7 @@ local payout_big = config.payout_big
 local version = "12"
 
 -- === Setup ===
-local modemSide = "top"
+local modemSide = "back"
 local diskDrive = peripheral.find("drive")
 local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
