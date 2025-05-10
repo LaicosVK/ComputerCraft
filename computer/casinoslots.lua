@@ -11,7 +11,7 @@ local modemSide = "back"
 local diskDrive = peripheral.find("drive")
 local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
-local speaker = peripheral.wrap("right")
+local speaker = peripheral.wrap("left")
 rednet.open(modemSide)
 
 -- === Symbols & Weights ===
@@ -57,10 +57,10 @@ local function drawScreen(state)
     monitor.setTextColor(colors.white)
     monitor.clear()
     centerText(2, "Slot Machine v." .. version)
-    centerText(4, "Insert Member Card")
+    centerText(4, "Mitgliedskarte einstecken")
 
     if state == "idle" then
-        centerText(6, "Cost: " .. cost .. " credits")
+        centerText(6, cost .. " credits")
         monitor.setBackgroundColor(colors.green)
         monitor.setTextColor(colors.black)
         centerText(8, "[   PLAY   ]")
