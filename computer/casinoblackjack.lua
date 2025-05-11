@@ -6,6 +6,9 @@ local MIN_BET = 50
 local BET_STEP = 50
 local MAX_BET = 1000
 
+local suits = { "♠", "♥", "♦", "♣" }
+local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
+
 -- === Debug Helper ===
 local function debugMessage(msg)
     print("[DEBUG] " .. msg)
@@ -48,7 +51,34 @@ local function centerText(y, text, bgColor)
     monitor.setBackgroundColor(colors.black)
 end
 
--- === Draw UI ===
+-- === Card Handling ===
+local function drawCard()
+    local value = values[math.random(#values)]
+    local suit = suits[math.random(#suits)]
+    return value .. suit
+end
+
+local function handValue(hand)
+    local total, aces = 0, 0
+    for _, card in ipairs(hand) do
+        local v = card:sub(1, -2)
+        if v == "A" then
+            total = total + 11
+            aces = aces + 1
+        elseif v == "K" or v == "Q" or v == "J" then
+            total = total + 10
+        else
+            total = total + tonumber(v)
+        end
+    end
+    while total > 21 and aces > 0 do
+        total = total - 10
+        aces = aces - 1
+    end
+    return total
+end
+
+-- === UI ===
 local function drawMainScreen()
     clear()
     centerText(2, "Blackjack Casino")
@@ -59,7 +89,7 @@ local function drawMainScreen()
     centerText(11, "   [ PLAY ]  ", colors.green)
 end
 
--- === Get Disk Key ===
+-- === Disk Key ===
 local function getKey()
     local mountPath = drive.getMountPath()
     if not mountPath or not fs.exists(mountPath .. "/player.key") then
@@ -79,13 +109,11 @@ local function getKey()
     end
 end
 
--- === Communication with Master Server ===
+-- === Rednet API ===
 local function requestBalance(key)
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
-    if msg and msg.ok then
-        return msg.balance
-    end
+    if msg and msg.ok then return msg.balance end
     return nil
 end
 
@@ -101,20 +129,41 @@ local function addCredits(key, amount)
     return msg and msg.ok
 end
 
--- === Event Handling ===
-local function waitForTouch()
+-- === Game Logic ===
+local function displayHands(player, dealer, hideDealer)
+    clear()
+    centerText(2, "Your Hand: " .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
+    local dealerDisplay = hideDealer and (dealer[1] .. " ??") or (table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")")
+    centerText(4, "Dealer: " .. dealerDisplay)
+end
+
+local function playerTurn(player, dealer)
     while true do
-        local e, side, x, y = os.pullEvent("monitor_touch")
-        return x, y
+        displayHands(player, dealer, true)
+        centerText(6, "   [ HIT ]   ", colors.orange)
+        centerText(7, "   [ STAND ] ", colors.lime)
+
+        local _, _, x, y = os.pullEvent("monitor_touch")
+        if y == 6 then
+            table.insert(player, drawCard())
+            if handValue(player) > 21 then return false end
+        elseif y == 7 then
+            return true
+        end
+    end
+end
+
+local function dealerTurn(dealer)
+    while handValue(dealer) < 17 do
+        table.insert(dealer, drawCard())
     end
 end
 
 local function playGame()
     clear()
     centerText(2, "Game starting...")
-    sleep(2)
+    sleep(1)
 
-    -- Remove credits for bet
     if not removeCredits(playerKey, currentBet) then
         centerText(4, "Not enough credits!")
         sleep(2)
@@ -122,20 +171,38 @@ local function playGame()
     end
 
     centerText(4, "Bet accepted!")
-    -- Here would be the actual Blackjack logic (cards, turns, win/loss)
-    sleep(2)
+    sleep(1)
 
-    local win = math.random() < 0.5
-    if win then
-        addCredits(playerKey, currentBet * 2)
-        centerText(6, "You win! +" .. (currentBet * 2) .. " Cr")
-    else
-        centerText(6, "You lose!")
+    local player = { drawCard(), drawCard() }
+    local dealer = { drawCard(), drawCard() }
+
+    local continued = playerTurn(player, dealer)
+
+    if not continued then
+        displayHands(player, dealer, false)
+        centerText(6, "You busted! You lose.")
+        sleep(3)
+        return
     end
 
-    sleep(3)
+    dealerTurn(dealer)
+    displayHands(player, dealer, false)
+    local playerVal = handValue(player)
+    local dealerVal = handValue(dealer)
+
+    if dealerVal > 21 or playerVal > dealerVal then
+        centerText(6, "You win! +" .. (currentBet * 2) .. " Cr")
+        addCredits(playerKey, currentBet * 2)
+    elseif playerVal == dealerVal then
+        centerText(6, "Push. Bet refunded.")
+        addCredits(playerKey, currentBet)
+    else
+        centerText(6, "Dealer wins. You lose.")
+    end
+    sleep(4)
 end
 
+-- === Input Handling ===
 local function handleTouch(x, y)
     if y == 8 then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
@@ -153,11 +220,11 @@ local function handleTouch(x, y)
     drawMainScreen()
 end
 
--- === Main Loop ===
+-- === Main ===
 rednet.open("top")
 drawMainScreen()
 
 while true do
-    local x, y = waitForTouch()
+    local x, y = os.pullEvent("monitor_touch")
     handleTouch(x, y)
 end
