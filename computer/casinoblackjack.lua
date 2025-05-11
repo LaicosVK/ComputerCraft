@@ -1,12 +1,12 @@
 -- === Blackjack-Spiel (Deutsch) ===
-local monitor, drive
+local monitor, drive, speaker
 local playerKey = nil
 local currentBet = 50
 local MIN_BET = 50
 local BET_STEP = 50
 local MAX_BET = 1000
 
-local version = "v7"
+local version = "v8"
 
 local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
@@ -23,6 +23,8 @@ for _, name in ipairs(peripheral.getNames()) do
         monitor = peripheral.wrap(name)
     elseif t == "drive" then
         drive = peripheral.wrap(name)
+    elseif t == "speaker" then
+        speaker = peripheral.wrap(name)
     end
 end
 
@@ -142,6 +144,7 @@ end
 -- === Spiel-Logik ===
 local function displayHands(player, dealer, hideDealer)
     clear()
+	speaker.playSound("block.piston.extend")
     centerText(2, "Dealer:")
     centerText(3, (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
     centerText(screenHeight - 4, "Deine Hand:")
@@ -157,8 +160,10 @@ local function playerTurn(player, dealer)
         local _, _, x, y = os.pullEvent("monitor_touch")
         if y == screenHeight - 1 then
             table.insert(player, drawCard())
+			speaker.playSound("entity.item.pickup")
             if handValue(player) > 21 then return false end
         elseif y == screenHeight then
+			speaker.playSound("block.lever.click")
             return true
         end
     end
@@ -192,6 +197,7 @@ local function playGame()
     if not continued then
         displayHands(player, dealer, false)
         centerText(screenHeight - 2, "Du hast verloren.", colors.red)
+		speaker.playSound("entity.zombie.infect")
         sleep(3)
         return
     end
@@ -203,16 +209,20 @@ local function playGame()
 
     if dealerVal > 21 then
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet / 2 * 5) .. " Cr", colors.green)
+		speaker.playSound("entity.player.levelup")
         addCredits(playerKey, currentBet / 2 * 5)
 	elseif playerVal > dealerVal then
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr", colors.green)
+		speaker.playSound("entity.villager.yes")
         addCredits(playerKey, currentBet * 2)
     elseif playerVal == dealerVal then
         centerText(screenHeight - 2, "Unentschieden.", colors.yellow)
         centerText(screenHeight - 1, "Einsatz zurück.", colors.yellow)
+		speaker.playSound("block.note_block.hat")
         addCredits(playerKey, currentBet)
     else
         centerText(screenHeight - 2, "Dealer gewinnt.", colors.red)
+		speaker.playSound("entity.villager.no")
     end
     sleep(4)
 end
@@ -221,12 +231,15 @@ end
 local function handleTouch(_, _, x, y)
     if y == buttonY.plus then
         currentBet = math.min(MAX_BET, currentBet + BET_STEP)
+		speaker.playSound("block.note_block.pling")
     elseif y == buttonY.minus then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
+		speaker.playSound("block.note_block.bass")
     elseif y == buttonY.play then
         playerKey = getKey()
         if not playerKey then
             centerText(screenHeight - 5, "Karte fehlt!")
+			speaker.playSound("block.anvil.land")
             sleep(2)
         else
             playGame()
