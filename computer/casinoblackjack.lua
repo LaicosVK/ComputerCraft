@@ -1,14 +1,3 @@
--- === CONFIGURATION ===
-local fileName = "startup"
-local folderName = ""
-local remoteURL = "https://raw.githubusercontent.com/LaicosVK/ComputerCraft/refs/heads/main/" .. folderName .. fileName .. ".lua"
-local localFile = fileName .. ".lua"
-local monitor = peripheral.wrap("right")  -- assuming monitor is on top
-local diskDrive = peripheral.wrap("right") -- assuming disk drive is connected to the right modem
-local playerKey = nil
-local playerBalance = 0
-local betAmount = 0
-
 -- === GET PLAYER KEY ===
 local function getKey()
     -- Locate a connected disk drive peripheral
@@ -41,10 +30,10 @@ local function getKey()
 
     local file = fs.open(mountPath .. "/player.key", "r")
     if file then
-        playerKey = file:readAll()
+        local key = file:readAll()
         file:close()
-        print("Key gelesen: " .. playerKey)
-        return playerKey
+        print("Key gelesen: " .. key)
+        return key
     else
         print("Fehler beim Lesen von player.key.")
         return nil
@@ -53,7 +42,8 @@ end
 
 -- === TALK TO MASTER SERVER ===
 local function requestBalance(key)
-    print("Requesting balance for key: " .. key)
+    print("Requesting balance for key: " .. (key or "nil"))
+    if not key then return nil end
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
     if msg and msg.ok then
@@ -173,15 +163,23 @@ end
 
 -- === MAIN ===
 print("Welcome to Blackjack!")
-getKey()
-playerBalance = requestBalance(playerKey)
+
+-- Get player key from disk drive
+local playerKey = getKey()
+if not playerKey then
+    print("Error: No player key found!")
+    return
+end
+
+-- Request player balance from the server
+local playerBalance = requestBalance(playerKey)
 
 if playerBalance then
     print("Your balance: " .. playerBalance)
     print("Please enter your bet amount:")
-    betAmount = tonumber(read())
+    local betAmount = tonumber(read())
 
-    if betAmount <= playerBalance then
+    if betAmount and betAmount <= playerBalance then
         print("Starting the game...")
         removeCredits(playerKey, betAmount)
         local win = playBlackjack()
@@ -193,7 +191,7 @@ if playerBalance then
             print("You lose.")
         end
     else
-        print("You don't have enough credits!")
+        print("You don't have enough credits or invalid bet!")
     end
 else
     print("Unable to fetch balance. Exiting.")
