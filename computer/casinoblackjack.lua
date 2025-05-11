@@ -162,37 +162,73 @@ local function playBlackjack()
 end
 
 -- === MAIN ===
+local betAmount = 50
+local playerKey = nil
+local playerBalance = 0
+
+-- Start Blackjack loop
 print("Welcome to Blackjack!")
+print("You start with 50 credits.")
 
--- Get player key from disk drive
-local playerKey = getKey()
-if not playerKey then
-    print("Error: No player key found!")
-    return
-end
-
--- Request player balance from the server
-local playerBalance = requestBalance(playerKey)
-
-if playerBalance then
-    print("Your balance: " .. playerBalance)
-    print("Please enter your bet amount:")
-    local betAmount = tonumber(read())
-
-    if betAmount and betAmount <= playerBalance then
-        print("Starting the game...")
-        removeCredits(playerKey, betAmount)
-        local win = playBlackjack()
-
-        if win then
-            print("You win, adding your winnings...")
-            addCredits(playerKey, betAmount * 2)
-        else
-            print("You lose.")
+-- Press play to start
+while true do
+    print("Press 'play' to start")
+    local input = read()
+    if input == "play" then
+        -- Get player key from disk drive when "Play" is pressed
+        playerKey = getKey()
+        if not playerKey then
+            print("Error: No player key found!")
+            return
         end
-    else
-        print("You don't have enough credits or invalid bet!")
+
+        -- Request player balance from the server
+        playerBalance = requestBalance(playerKey)
+
+        if playerBalance then
+            print("Your balance: " .. playerBalance)
+
+            -- Bet handling with +50 and -50 buttons
+            while true do
+                print("Your current bet: " .. betAmount .. " credits")
+                print("Press '+50' to increase bet or '-50' to decrease bet.")
+                local betInput = read()
+
+                if betInput == "+50" then
+                    if betAmount + 50 <= playerBalance then
+                        betAmount = betAmount + 50
+                        print("Bet increased to " .. betAmount .. " credits.")
+                    else
+                        print("Not enough balance!")
+                    end
+                elseif betInput == "-50" then
+                    if betAmount - 50 >= 50 then
+                        betAmount = betAmount - 50
+                        print("Bet decreased to " .. betAmount .. " credits.")
+                    else
+                        print("Bet cannot go below 50 credits!")
+                    end
+                elseif betInput == "start" then
+                    break
+                end
+            end
+
+            -- Proceed with game play
+            if betAmount > 0 then
+                print("Starting the game with bet: " .. betAmount .. " credits.")
+                removeCredits(playerKey, betAmount)
+                local win = playBlackjack()
+
+                if win then
+                    print("You win, adding your winnings...")
+                    addCredits(playerKey, betAmount * 2)
+                else
+                    print("You lose.")
+                end
+            end
+        else
+            print("Unable to fetch balance. Exiting.")
+            return
+        end
     end
-else
-    print("Unable to fetch balance. Exiting.")
 end
