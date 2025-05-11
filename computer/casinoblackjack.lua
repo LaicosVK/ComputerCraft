@@ -82,8 +82,8 @@ end
 local _, screenHeight = monitor.getSize()
 
 local buttonY = {
-    minus = screenHeight - 2,
-    plus = screenHeight - 1,
+    plus = screenHeight - 2,
+    minus = screenHeight - 1,
     play = screenHeight
 }
 
@@ -91,9 +91,9 @@ local function drawMainScreen()
     clear()
     centerText(2, "Blackjack Tisch")
     centerText(4, "Karte einlegen und 'Spielen' drücken")
-    centerText(screenHeight - 4, "Einsatz: " .. currentBet .. " Cr")
-    centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
+    centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Cr")
     centerText(buttonY.plus,  "   [ +50 ]   ", colors.gray)
+    centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
     centerText(buttonY.play,  "   [ SPIELEN ]  ", colors.green)
 end
 
@@ -211,10 +211,10 @@ end
 
 -- === Eingabe-Verarbeitung ===
 local function handleTouch(_, _, x, y)
-    if y == buttonY.minus then
-        currentBet = math.max(MIN_BET, currentBet - BET_STEP)
-    elseif y == buttonY.plus then
+    if y == buttonY.plus then
         currentBet = math.min(MAX_BET, currentBet + BET_STEP)
+    elseif y == buttonY.minus then
+        currentBet = math.max(MIN_BET, currentBet - BET_STEP)
     elseif y == buttonY.play then
         playerKey = getKey()
         if not playerKey then
