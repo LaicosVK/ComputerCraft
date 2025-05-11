@@ -79,14 +79,20 @@ local function handValue(hand)
 end
 
 -- === UI ===
+local buttonY = {
+    minus = 8,
+    plus = 9,
+    play = 11
+}
+
 local function drawMainScreen()
     clear()
     centerText(2, "Blackjack Casino")
     centerText(4, "Insert card and press Play")
     centerText(6, "Current Bet: " .. currentBet .. " Cr")
-    centerText(8, "   [ -50 ]   ", colors.gray)
-    centerText(9, "   [ +50 ]   ", colors.gray)
-    centerText(11, "   [ PLAY ]  ", colors.green)
+    centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
+    centerText(buttonY.plus,  "   [ +50 ]   ", colors.gray)
+    centerText(buttonY.play,  "   [ PLAY ]  ", colors.green)
 end
 
 -- === Disk Key ===
@@ -203,12 +209,12 @@ local function playGame()
 end
 
 -- === Input Handling ===
-local function handleTouch(x, y)
-    if y == 8 then
+local function handleTouch(_, _, x, y)
+    if y == buttonY.minus then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
-    elseif y == 9 then
+    elseif y == buttonY.plus then
         currentBet = math.min(MAX_BET, currentBet + BET_STEP)
-    elseif y == 11 then
+    elseif y == buttonY.play then
         playerKey = getKey()
         if not playerKey then
             centerText(13, "Insert card first!")
@@ -225,6 +231,5 @@ rednet.open("top")
 drawMainScreen()
 
 while true do
-    local x, y = os.pullEvent("monitor_touch")
-    handleTouch(x, y)
+    handleTouch(os.pullEvent("monitor_touch"))
 end
