@@ -6,7 +6,7 @@ local MIN_BET = 50
 local BET_STEP = 50
 local MAX_BET = 1000
 
-local version = "v3"
+local version = "v4"
 
 local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
@@ -142,8 +142,10 @@ end
 -- === Spiel-Logik ===
 local function displayHands(player, dealer, hideDealer)
     clear()
-    centerText(2, "Dealer:\n" .. (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
-    centerText(screenHeight - 4, "Deine Hand:\n" .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
+    centerText(2, "Dealer:")
+    centerText(3, (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
+    centerText(screenHeight - 4, "Deine Hand:")
+    centerText(screenHeight - 3, table.concat(player, " ") .. " (" .. handValue(player) .. ")")
 end
 
 local function playerTurn(player, dealer)
