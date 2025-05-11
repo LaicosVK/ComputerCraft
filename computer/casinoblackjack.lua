@@ -1,4 +1,4 @@
--- === Blackjack Game ===
+-- === Blackjack-Spiel (Deutsch) ===
 local monitor, drive
 local playerKey = nil
 local currentBet = 50
@@ -9,12 +9,12 @@ local MAX_BET = 1000
 local suits = { "♠", "♥", "♦", "♣" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
 
--- === Debug Helper ===
+-- === Debugging ===
 local function debugMessage(msg)
     print("[DEBUG] " .. msg)
 end
 
--- === Peripheral Setup ===
+-- === Peripherie-Erkennung ===
 for _, name in ipairs(peripheral.getNames()) do
     local t = peripheral.getType(name)
     if t == "monitor" then
@@ -25,14 +25,14 @@ for _, name in ipairs(peripheral.getNames()) do
 end
 
 if not monitor or not drive then
-    error("Monitor or drive not found")
+    error("Monitor oder Laufwerk nicht gefunden.")
 end
 
 monitor.setTextScale(1)
 monitor.setBackgroundColor(colors.black)
 monitor.setTextColor(colors.white)
 
--- === Helper Functions ===
+-- === Hilfsfunktionen ===
 local function clear()
     monitor.clear()
     monitor.setCursorPos(1, 1)
@@ -51,7 +51,7 @@ local function centerText(y, text, bgColor)
     monitor.setBackgroundColor(colors.black)
 end
 
--- === Card Handling ===
+-- === Kartenfunktionen ===
 local function drawCard()
     local value = values[math.random(#values)]
     local suit = suits[math.random(#suits)]
@@ -78,28 +78,30 @@ local function handValue(hand)
     return total
 end
 
--- === UI ===
+-- === Benutzeroberfläche ===
+local _, screenHeight = monitor.getSize()
+
 local buttonY = {
-    minus = 8,
-    plus = 9,
-    play = 11
+    minus = screenHeight - 2,
+    plus = screenHeight - 1,
+    play = screenHeight
 }
 
 local function drawMainScreen()
     clear()
-    centerText(2, "Blackjack Casino")
-    centerText(4, "Insert card and press Play")
-    centerText(6, "Current Bet: " .. currentBet .. " Cr")
+    centerText(2, "Blackjack Tisch")
+    centerText(4, "Karte einlegen und 'Spielen' drücken")
+    centerText(screenHeight - 4, "Einsatz: " .. currentBet .. " Cr")
     centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
     centerText(buttonY.plus,  "   [ +50 ]   ", colors.gray)
-    centerText(buttonY.play,  "   [ PLAY ]  ", colors.green)
+    centerText(buttonY.play,  "   [ SPIELEN ]  ", colors.green)
 end
 
--- === Disk Key ===
+-- === Spieler-Key ===
 local function getKey()
     local mountPath = drive.getMountPath()
     if not mountPath or not fs.exists(mountPath .. "/player.key") then
-        debugMessage("Key file not found.")
+        debugMessage("Datei player.key nicht gefunden.")
         return nil
     end
 
@@ -107,15 +109,15 @@ local function getKey()
     if file then
         local key = file.readAll()
         file.close()
-        debugMessage("Read key: " .. key)
+        debugMessage("Key gelesen: " .. key)
         return key
     else
-        debugMessage("Failed to read player.key")
+        debugMessage("Fehler beim Lesen der Datei.")
         return nil
     end
 end
 
--- === Rednet API ===
+-- === Rednet-API ===
 local function requestBalance(key)
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
@@ -135,25 +137,24 @@ local function addCredits(key, amount)
     return msg and msg.ok
 end
 
--- === Game Logic ===
+-- === Spiel-Logik ===
 local function displayHands(player, dealer, hideDealer)
     clear()
-    centerText(2, "Your Hand: " .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
-    local dealerDisplay = hideDealer and (dealer[1] .. " ??") or (table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")")
-    centerText(4, "Dealer: " .. dealerDisplay)
+    centerText(2, "Dealer: " .. (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
+    centerText(screenHeight - 6, "Deine Hand: " .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
 end
 
 local function playerTurn(player, dealer)
     while true do
         displayHands(player, dealer, true)
-        centerText(6, "   [ HIT ]   ", colors.orange)
-        centerText(7, "   [ STAND ] ", colors.lime)
+        centerText(screenHeight - 4, "   [ ZIEHEN ]   ", colors.orange)
+        centerText(screenHeight - 3, "   [ HALTEN ]   ", colors.lime)
 
         local _, _, x, y = os.pullEvent("monitor_touch")
-        if y == 6 then
+        if y == screenHeight - 4 then
             table.insert(player, drawCard())
             if handValue(player) > 21 then return false end
-        elseif y == 7 then
+        elseif y == screenHeight - 3 then
             return true
         end
     end
@@ -167,16 +168,16 @@ end
 
 local function playGame()
     clear()
-    centerText(2, "Game starting...")
+    centerText(2, "Spiel startet...")
     sleep(1)
 
     if not removeCredits(playerKey, currentBet) then
-        centerText(4, "Not enough credits!")
+        centerText(4, "Nicht genug Credits!")
         sleep(2)
         return
     end
 
-    centerText(4, "Bet accepted!")
+    centerText(4, "Einsatz akzeptiert!")
     sleep(1)
 
     local player = { drawCard(), drawCard() }
@@ -186,7 +187,7 @@ local function playGame()
 
     if not continued then
         displayHands(player, dealer, false)
-        centerText(6, "You busted! You lose.")
+        centerText(screenHeight - 2, "Du hast verloren.")
         sleep(3)
         return
     end
@@ -197,18 +198,18 @@ local function playGame()
     local dealerVal = handValue(dealer)
 
     if dealerVal > 21 or playerVal > dealerVal then
-        centerText(6, "You win! +" .. (currentBet * 2) .. " Cr")
+        centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr")
         addCredits(playerKey, currentBet * 2)
     elseif playerVal == dealerVal then
-        centerText(6, "Push. Bet refunded.")
+        centerText(screenHeight - 2, "Unentschieden. Einsatz zurück.")
         addCredits(playerKey, currentBet)
     else
-        centerText(6, "Dealer wins. You lose.")
+        centerText(screenHeight - 2, "Dealer gewinnt.")
     end
     sleep(4)
 end
 
--- === Input Handling ===
+-- === Eingabe-Verarbeitung ===
 local function handleTouch(_, _, x, y)
     if y == buttonY.minus then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
@@ -217,7 +218,7 @@ local function handleTouch(_, _, x, y)
     elseif y == buttonY.play then
         playerKey = getKey()
         if not playerKey then
-            centerText(13, "Insert card first!")
+            centerText(screenHeight - 5, "Karte fehlt!")
             sleep(2)
         else
             playGame()
@@ -226,7 +227,7 @@ local function handleTouch(_, _, x, y)
     drawMainScreen()
 end
 
--- === Main ===
+-- === Hauptprogramm ===
 rednet.open("top")
 drawMainScreen()
 
