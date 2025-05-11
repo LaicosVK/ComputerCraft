@@ -6,7 +6,7 @@ local MIN_BET = 50
 local BET_STEP = 50
 local MAX_BET = 1000
 
-local version = "v6"
+local version = "v7"
 
 local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
@@ -208,7 +208,8 @@ local function playGame()
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr", colors.green)
         addCredits(playerKey, currentBet * 2)
     elseif playerVal == dealerVal then
-        centerText(screenHeight - 2, "Unentschieden.\nEinsatz zurück.", colors.yellow)
+        centerText(screenHeight - 2, "Unentschieden.", colors.yellow)
+        centerText(screenHeight - 1, "Einsatz zurück.", colors.yellow)
         addCredits(playerKey, currentBet)
     else
         centerText(screenHeight - 2, "Dealer gewinnt.", colors.red)
