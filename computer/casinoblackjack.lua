@@ -35,21 +35,28 @@ local function clear()
     monitor.setCursorPos(1, 1)
 end
 
-local function centerText(y, text)
+local function centerText(y, text, bgColor)
     local w, _ = monitor.getSize()
     local x = math.floor((w - #text) / 2) + 1
     monitor.setCursorPos(x, y)
+    if bgColor then
+        monitor.setBackgroundColor(bgColor)
+        monitor.clearLine()
+        monitor.setCursorPos(x, y)
+    end
     monitor.write(text)
+    monitor.setBackgroundColor(colors.black)
 end
 
+-- === Draw UI ===
 local function drawMainScreen()
     clear()
-    centerText(2, "🎲 Blackjack Casino 🎲")
+    centerText(2, "Blackjack Casino")
     centerText(4, "Insert card and press Play")
     centerText(6, "Current Bet: " .. currentBet .. " Cr")
-    centerText(8, "[ -50 ]")
-    centerText(9, "[ +50 ]")
-    centerText(11, "[ PLAY ]")
+    centerText(8, "   [ -50 ]   ", colors.gray)
+    centerText(9, "   [ +50 ]   ", colors.gray)
+    centerText(11, "   [ PLAY ]  ", colors.green)
 end
 
 -- === Get Disk Key ===
@@ -102,6 +109,33 @@ local function waitForTouch()
     end
 end
 
+local function playGame()
+    clear()
+    centerText(2, "Game starting...")
+    sleep(2)
+
+    -- Remove credits for bet
+    if not removeCredits(playerKey, currentBet) then
+        centerText(4, "Not enough credits!")
+        sleep(2)
+        return
+    end
+
+    centerText(4, "Bet accepted!")
+    -- Here would be the actual Blackjack logic (cards, turns, win/loss)
+    sleep(2)
+
+    local win = math.random() < 0.5
+    if win then
+        addCredits(playerKey, currentBet * 2)
+        centerText(6, "You win! +" .. (currentBet * 2) .. " Cr")
+    else
+        centerText(6, "You lose!")
+    end
+
+    sleep(3)
+end
+
 local function handleTouch(x, y)
     if y == 8 then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
@@ -113,9 +147,7 @@ local function handleTouch(x, y)
             centerText(13, "Insert card first!")
             sleep(2)
         else
-            centerText(13, "Starting game...")
-            sleep(1)
-            -- Game logic would go here
+            playGame()
         end
     end
     drawMainScreen()
