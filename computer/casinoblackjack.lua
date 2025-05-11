@@ -1,143 +1,218 @@
--- === Load Config ===
-local config = dofile("config.lua")
-local cost = config.cost
-local payout_small = config.payout_small
-local payout_medium = config.payout_medium
-local payout_big = config.payout_big
+-- casinoblackjack.lua
+-- One player vs dealer blackjack game
+
+-- === Constants ===
+local MIN_BET = 50
+local BET_STEP = 50
+local BLACKJACK_PAYOUT = 2.5
+local WIN_PAYOUT = 2.0
+local TIE_PAYOUT = 1.0
 
 -- === Setup ===
-local modemSide = "top"
-local diskDriveSide = "left"
-local monitor = peripheral.find("monitor")
-rednet.open(modemSide)
+local monitor, drive
+for _, name in ipairs(peripheral.getNames()) do
+    local t = peripheral.getType(name)
+    if t == "monitor" then
+        monitor = peripheral.wrap(name)
+    elseif t == "drive" then
+        drive = peripheral.wrap(name)
+    end
+end
 
--- === Symbols ===
-local symbols = {
-    { char = "A", tier = "small" },
-    { char = "B", tier = "medium" },
-    { char = "C", tier = "big" }
-}
+assert(monitor, "Monitor not found")
+assert(drive, "Disk drive not found")
 
--- === UI ===
+monitor.setTextScale(0.5)
+
+-- === Utility ===
+local function debugMessage(msg)
+    print("[DEBUG] " .. msg)
+end
+
 local function centerText(line, text)
     local w, _ = monitor.getSize()
     monitor.setCursorPos(math.floor((w - #text) / 2) + 1, line)
     monitor.write(text)
 end
 
-local function drawScreen(state)
-    monitor.setTextScale(1)
-    monitor.setBackgroundColor(colors.black)
-    monitor.setTextColor(colors.white)
+local function drawBetScreen(bet)
     monitor.clear()
-    centerText(1, "Slot Machine")
-    centerText(3, "Insert Member Card")
+    centerText(2, "Set your bet amount")
+    centerText(4, "Current Bet: " .. bet .. " C")
+    centerText(6, "[ -50 ]    [ Play ]    [ +50 ]")
+end
 
-    if state == "idle" then
-        centerText(5, "Press to Play (" .. cost .. "C)")
-        monitor.setCursorPos(10, 7)
-        monitor.write("[ PLAY ]")
-    elseif state == "spinning" then
-        centerText(5, "Spinning...")
-    elseif state == "error" then
-        centerText(5, "Error!")
+local function waitForTouch()
+    while true do
+        local e, side, x, y = os.pullEvent("monitor_touch")
+        return x, y
     end
 end
 
--- === Get Disk Key ===
+-- === Disk Key ===
 local function getKey()
-    if disk.hasData(diskDriveSide) then
-        return fs.open(disk.getMountPath(diskDriveSide) .. "/key", "r"):readAll()
-    end
-    return nil
+    if not drive.isDiskPresent() then return nil end
+    local mountPath = drive.getMountPath()
+    if not mountPath then return nil end
+    if not fs.exists(mountPath .. "/player.key") then return nil end
+    local file = fs.open(mountPath .. "/player.key", "r")
+    if not file then return nil end
+    local key = file.readAll()
+    file.close()
+    return key
 end
 
--- === Talk to Master ===
+-- === Master Communication ===
 local function requestBalance(key)
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
-    if msg and msg.ok then return msg.balance end
-    return nil
+    return msg and msg.balance or nil
 end
 
 local function removeCredits(key, amount)
     rednet.broadcast({ type = "remove_credits", key = key, amount = amount }, "casino")
-    local id, msg = rednet.receive("casino", 2)
+    local _, msg = rednet.receive("casino", 2)
     return msg and msg.ok
 end
 
 local function addCredits(key, amount)
     rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
-    local id, msg = rednet.receive("casino", 2)
+    local _, msg = rednet.receive("casino", 2)
     return msg and msg.ok
 end
 
--- === Slot Logic ===
-local function spinSlots()
-    local result = {}
-    for i = 1, 3 do
-        result[i] = symbols[math.random(1, #symbols)]
-    end
-    return result
+-- === Blackjack Game Logic ===
+local cards = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"}
+
+local function drawCard()
+    return cards[math.random(#cards)]
 end
 
-local function evaluate(result)
-    if result[1].char == result[2].char and result[2].char == result[3].char then
-        if result[1].tier == "small" then return payout_small
-        elseif result[1].tier == "medium" then return payout_medium
-        elseif result[1].tier == "big" then return payout_big
+local function calculateScore(hand)
+    local score = 0
+    local aces = 0
+    for _, card in ipairs(hand) do
+        if card == "A" then
+            score = score + 11
+            aces = aces + 1
+        elseif card == "K" or card == "Q" or card == "J" or card == "10" then
+            score = score + 10
+        else
+            score = score + tonumber(card)
         end
     end
-    return 0
-end
-
-local function showResult(result, winMult)
-    monitor.clear()
-    centerText(2, "Result:")
-    local line = 4
-    local symbolsStr = result[1].char .. " | " .. result[2].char .. " | " .. result[3].char
-    centerText(line, symbolsStr)
-    line = line + 2
-    if winMult > 0 then
-        centerText(line, "You Win x" .. winMult .. "!")
-    else
-        centerText(line, "You Lose!")
+    while score > 21 and aces > 0 do
+        score = score - 10
+        aces = aces - 1
     end
-    sleep(3)
+    return score
 end
 
--- === Main ===
-drawScreen("idle")
+local function showHand(y, label, hand)
+    local handStr = table.concat(hand, " ")
+    centerText(y, label .. ": " .. handStr)
+end
+
+local function playBlackjack(key, bet)
+    local player = {drawCard(), drawCard()}
+    local dealer = {drawCard(), drawCard()}
+
+    monitor.clear()
+    showHand(2, "Dealer", {dealer[1], "?"})
+    showHand(4, "You", player)
+    centerText(6, "[ Hit ]   [ Stand ]")
+
+    while true do
+        local x, y = waitForTouch()
+        if y == 6 and x >= 2 and x <= 8 then
+            table.insert(player, drawCard())
+        elseif y == 6 and x >= 15 and x <= 21 then
+            break
+        end
+        monitor.clear()
+        showHand(2, "Dealer", {dealer[1], "?"})
+        showHand(4, "You", player)
+        centerText(6, "[ Hit ]   [ Stand ]")
+        if calculateScore(player) > 21 then break end
+    end
+
+    local playerScore = calculateScore(player)
+    local dealerScore = calculateScore(dealer)
+    while dealerScore < 17 do
+        table.insert(dealer, drawCard())
+        dealerScore = calculateScore(dealer)
+    end
+
+    monitor.clear()
+    showHand(2, "Dealer", dealer)
+    showHand(4, "You", player)
+
+    local result = "Push"
+    local payout = 0
+
+    if playerScore > 21 then
+        result = "You Lose"
+        payout = 0
+    elseif dealerScore > 21 or playerScore > dealerScore then
+        if #player == 2 and playerScore == 21 then
+            result = "Blackjack!"
+            payout = bet * BLACKJACK_PAYOUT
+        else
+            result = "You Win"
+            payout = bet * WIN_PAYOUT
+        end
+    elseif playerScore == dealerScore then
+        result = "Push"
+        payout = bet * TIE_PAYOUT
+    else
+        result = "You Lose"
+        payout = 0
+    end
+
+    if payout > 0 then
+        addCredits(key, payout)
+    end
+
+    centerText(6, result .. " - " .. payout .. "C")
+    sleep(4)
+end
+
+-- === Main Loop ===
+math.randomseed(os.time())
+rednet.open("top")
 
 while true do
-    local event, side, x, y = os.pullEvent("monitor_touch")
-    if y == 7 and x >= 10 and x <= 17 then
-        drawScreen("spinning")
+    local bet = MIN_BET
+    drawBetScreen(bet)
 
-        local key = getKey()
-        if not key then
-            drawScreen("error")
-            sleep(2)
-            drawScreen("idle")
-        else
-            local balance = requestBalance(key)
-            if balance and balance >= cost then
-                if removeCredits(key, cost) then
-                    local result = spinSlots()
-                    local mult = evaluate(result)
-                    local payout = mult * cost
-                    if payout > 0 then addCredits(key, payout) end
-                    showResult(result, mult)
+    while true do
+        local x, y = waitForTouch()
+        if y == 6 then
+            if x >= 2 and x <= 7 then
+                bet = math.max(MIN_BET, bet - BET_STEP)
+            elseif x >= 21 and x <= 27 then
+                bet = bet + BET_STEP
+            elseif x >= 12 and x <= 17 then
+                local key = getKey()
+                if not key then
+                    monitor.clear()
+                    centerText(3, "Insert valid player card")
+                    sleep(2)
+                    break
+                end
+                local balance = requestBalance(key)
+                if balance and balance >= bet then
+                    if removeCredits(key, bet) then
+                        playBlackjack(key, bet)
+                    end
                 else
-                    drawScreen("error")
+                    monitor.clear()
+                    centerText(3, "Not enough credits")
                     sleep(2)
                 end
-            else
-                monitor.clear()
-                centerText(5, "Not enough credits")
-                sleep(2)
+                break
             end
+            drawBetScreen(bet)
         end
-        drawScreen("idle")
     end
 end
