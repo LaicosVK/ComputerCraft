@@ -163,7 +163,7 @@ end
 
 -- === MONITOR UI ===
 local monitor = peripheral.wrap("right") -- The connected monitor
-monitor.setTextScale(0.5)
+--monitor.setTextScale(0.5)
 
 -- Draw text centered
 local function drawCentered(y, text)
