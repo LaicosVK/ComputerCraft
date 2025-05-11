@@ -161,74 +161,103 @@ local function playBlackjack()
     end
 end
 
+-- === MONITOR UI ===
+local monitor = peripheral.wrap("right") -- The connected monitor
+monitor.setTextScale(0.5)
+
+-- Draw text centered
+local function drawCentered(y, text)
+    local x = math.floor((monitor.getSize() - #text) / 2)
+    monitor.setCursorPos(x, y)
+    monitor.write(text)
+end
+
+-- Button creation
+local function drawButton(y, label)
+    local x = math.floor((monitor.getSize() - #label) / 2)
+    monitor.setCursorPos(x, y)
+    monitor.write("[" .. label .. "]")
+end
+
 -- === MAIN ===
 local betAmount = 50
 local playerKey = nil
 local playerBalance = 0
 
 -- Start Blackjack loop
-print("Welcome to Blackjack!")
-print("You start with 50 credits.")
-
--- Press play to start
 while true do
-    print("Press 'play' to start")
-    local input = read()
-    if input == "play" then
-        -- Get player key from disk drive when "Play" is pressed
+    monitor.clear()
+    drawCentered(1, "Welcome to Blackjack!")
+    drawCentered(2, "Your current balance: " .. playerBalance .. " credits")
+    drawCentered(3, "Bet: " .. betAmount .. " credits")
+    
+    drawButton(5, "Play")
+    drawButton(6, "+50 Credits")
+    drawButton(7, "-50 Credits")
+    
+    local event, side, x, y = os.pullEvent("monitor_touch")
+    
+    if y == 5 then
+        -- Pressed "Play" button
         playerKey = getKey()
         if not playerKey then
-            print("Error: No player key found!")
-            return
+            drawCentered(8, "Error: No player key found!")
+            sleep(2)
+            goto continue
         end
 
         -- Request player balance from the server
         playerBalance = requestBalance(playerKey)
+        
+        if not playerBalance then
+            drawCentered(8, "Error: Failed to get balance.")
+            sleep(2)
+            goto continue
+        end
 
-        if playerBalance then
-            print("Your balance: " .. playerBalance)
-
-            -- Bet handling with +50 and -50 buttons
-            while true do
-                print("Your current bet: " .. betAmount .. " credits")
-                print("Press '+50' to increase bet or '-50' to decrease bet.")
-                local betInput = read()
-
-                if betInput == "+50" then
-                    if betAmount + 50 <= playerBalance then
-                        betAmount = betAmount + 50
-                        print("Bet increased to " .. betAmount .. " credits.")
-                    else
-                        print("Not enough balance!")
-                    end
-                elseif betInput == "-50" then
-                    if betAmount - 50 >= 50 then
-                        betAmount = betAmount - 50
-                        print("Bet decreased to " .. betAmount .. " credits.")
-                    else
-                        print("Bet cannot go below 50 credits!")
-                    end
-                elseif betInput == "start" then
-                    break
+        drawCentered(8, "Your balance: " .. playerBalance)
+        
+        -- Bet handling
+        while true do
+            local event, side, x, y = os.pullEvent("monitor_touch")
+            
+            if y == 6 then
+                if betAmount + 50 <= playerBalance then
+                    betAmount = betAmount + 50
+                    monitor.clear()
+                    drawCentered(1, "Bet increased to " .. betAmount)
+                else
+                    monitor.clear()
+                    drawCentered(1, "Not enough balance!")
+                end
+            elseif y == 7 then
+                if betAmount - 50 >= 50 then
+                    betAmount = betAmount - 50
+                    monitor.clear()
+                    drawCentered(1, "Bet decreased to " .. betAmount)
+                else
+                    monitor.clear()
+                    drawCentered(1, "Bet cannot go below 50!")
                 end
             end
 
-            -- Proceed with game play
-            if betAmount > 0 then
-                print("Starting the game with bet: " .. betAmount .. " credits.")
+            -- Start the game
+            if y == 5 then
+                monitor.clear()
+                drawCentered(1, "Starting game...")
                 removeCredits(playerKey, betAmount)
                 local win = playBlackjack()
-
                 if win then
-                    print("You win, adding your winnings...")
                     addCredits(playerKey, betAmount * 2)
+                    drawCentered(8, "You win! Added " .. betAmount * 2 .. " credits")
                 else
-                    print("You lose.")
+                    drawCentered(8, "You lose.")
                 end
+                sleep(2)
+                goto continue
             end
-        else
-            print("Unable to fetch balance. Exiting.")
-            return
         end
     end
+
+    ::continue::
 end
