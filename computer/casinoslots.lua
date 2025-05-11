@@ -4,7 +4,7 @@ local cost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "13"
+local version = "14"
 
 -- === Setup ===
 local modemSide = "back"
@@ -196,7 +196,7 @@ local function spinSlots()
             end
         end
 
-        sleep(0.5)
+        sleep(0.3)
     end
 
     for i = 1, 3 do
