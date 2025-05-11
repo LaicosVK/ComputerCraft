@@ -6,7 +6,9 @@ local MIN_BET = 50
 local BET_STEP = 50
 local MAX_BET = 1000
 
-local suits = { "♠", "♥", "♦", "♣" }
+local version = "v1"
+
+local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
 
 -- === Debugging ===
@@ -89,9 +91,9 @@ local buttonY = {
 
 local function drawMainScreen()
     clear()
-    centerText(2, "Blackjack Tisch")
-    centerText(4, "Karte einlegen und 'Spielen' drücken")
-    centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Cr")
+    centerText(2, "Blackjack " .. version)
+    centerText(4, "Casinokarte einlegen")
+    centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Credits")
     centerText(buttonY.plus,  "   [ +50 ]   ", colors.gray)
     centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
     centerText(buttonY.play,  "   [ SPIELEN ]  ", colors.green)
@@ -141,20 +143,20 @@ end
 local function displayHands(player, dealer, hideDealer)
     clear()
     centerText(2, "Dealer: " .. (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
-    centerText(screenHeight - 6, "Deine Hand: " .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
+    centerText(screenHeight - 3, "Deine Hand: " .. table.concat(player, " ") .. " (" .. handValue(player) .. ")")
 end
 
 local function playerTurn(player, dealer)
     while true do
         displayHands(player, dealer, true)
-        centerText(screenHeight - 4, "   [ ZIEHEN ]   ", colors.orange)
-        centerText(screenHeight - 3, "   [ HALTEN ]   ", colors.lime)
+        centerText(screenHeight - 1, "   [ ZIEHEN ]   ", colors.orange)
+        centerText(screenHeight, "   [ HALTEN ]   ", colors.lime)
 
         local _, _, x, y = os.pullEvent("monitor_touch")
-        if y == screenHeight - 4 then
+        if y == screenHeight - 1 then
             table.insert(player, drawCard())
             if handValue(player) > 21 then return false end
-        elseif y == screenHeight - 3 then
+        elseif y == screenHeight then
             return true
         end
     end
