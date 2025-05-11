@@ -1,268 +1,143 @@
--- === GET PLAYER KEY ===
-local function getKey()
-    -- Locate a connected disk drive peripheral
-    local driveName
-    for _, name in ipairs(peripheral.getNames()) do
-        if peripheral.getType(name) == "drive" then
-            driveName = name
-            break
-        end
-    end
+-- === Load Config ===
+local config = dofile("config.lua")
+local cost = config.cost
+local payout_small = config.payout_small
+local payout_medium = config.payout_medium
+local payout_big = config.payout_big
 
-    if not driveName then
-        print("Kein Disklaufwerk gefunden.")
-        return nil
-    end
+-- === Setup ===
+local modemSide = "top"
+local diskDriveSide = "left"
+local monitor = peripheral.find("monitor")
+rednet.open(modemSide)
 
-    local drive = peripheral.wrap(driveName)
-    if not drive.isDiskPresent() then
-        print("Keine Diskette im Laufwerk.")
-        return nil
-    end
+-- === Symbols ===
+local symbols = {
+    { char = "A", tier = "small" },
+    { char = "B", tier = "medium" },
+    { char = "C", tier = "big" }
+}
 
-    local mountPath = drive.getMountPath()
-    print("Mount-Pfad: " .. (mountPath or "nil"))
+-- === UI ===
+local function centerText(line, text)
+    local w, _ = monitor.getSize()
+    monitor.setCursorPos(math.floor((w - #text) / 2) + 1, line)
+    monitor.write(text)
+end
 
-    if not mountPath or not fs.exists(mountPath .. "/player.key") then
-        print("Datei player.key nicht gefunden bei: " .. (mountPath or "nil") .. "/player.key")
-        return nil
-    end
+local function drawScreen(state)
+    monitor.setTextScale(1)
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
+    monitor.clear()
+    centerText(1, "Slot Machine")
+    centerText(3, "Insert Member Card")
 
-    local file = fs.open(mountPath .. "/player.key", "r")
-    if file then
-        local key = file:readAll()
-        file:close()
-        print("Key gelesen: " .. key)
-        return key
-    else
-        print("Fehler beim Lesen von player.key.")
-        return nil
+    if state == "idle" then
+        centerText(5, "Press to Play (" .. cost .. "C)")
+        monitor.setCursorPos(10, 7)
+        monitor.write("[ PLAY ]")
+    elseif state == "spinning" then
+        centerText(5, "Spinning...")
+    elseif state == "error" then
+        centerText(5, "Error!")
     end
 end
 
--- === TALK TO MASTER SERVER ===
+-- === Get Disk Key ===
+local function getKey()
+    if disk.hasData(diskDriveSide) then
+        return fs.open(disk.getMountPath(diskDriveSide) .. "/key", "r"):readAll()
+    end
+    return nil
+end
+
+-- === Talk to Master ===
 local function requestBalance(key)
-    print("Requesting balance for key: " .. (key or "nil"))
-    if not key then return nil end
     rednet.broadcast({ type = "get_balance", key = key }, "casino")
     local id, msg = rednet.receive("casino", 2)
-    if msg and msg.ok then
-        print("Balance: " .. msg.balance)
-        return msg.balance
-    end
-    print("Failed to get balance.")
+    if msg and msg.ok then return msg.balance end
     return nil
 end
 
 local function removeCredits(key, amount)
-    print("Removing " .. amount .. " credits.")
     rednet.broadcast({ type = "remove_credits", key = key, amount = amount }, "casino")
     local id, msg = rednet.receive("casino", 2)
-    if msg and msg.ok then
-        print("Credits removed.")
-        return true
-    end
-    print("Failed to remove credits.")
-    return false
+    return msg and msg.ok
 end
 
 local function addCredits(key, amount)
-    print("Adding " .. amount .. " credits.")
     rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
     local id, msg = rednet.receive("casino", 2)
-    if msg and msg.ok then
-        print("Credits added.")
-        return true
+    return msg and msg.ok
+end
+
+-- === Slot Logic ===
+local function spinSlots()
+    local result = {}
+    for i = 1, 3 do
+        result[i] = symbols[math.random(1, #symbols)]
     end
-    print("Failed to add credits.")
-    return false
+    return result
 end
 
--- === BLACKJACK GAME LOGIC ===
-local function dealCard()
-    local suits = {"♥", "♦", "♣", "♠"}
-    local values = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
-    local suit = suits[math.random(1, #suits)]
-    local value = values[math.random(1, #values)]
-    return value .. suit
-end
-
-local function calculateHandValue(hand)
-    local value = 0
-    local aces = 0
-    for _, card in ipairs(hand) do
-        local cardValue = card:sub(1, #card - 1)
-        if cardValue == "J" or cardValue == "Q" or cardValue == "K" then
-            value = value + 10
-        elseif cardValue == "A" then
-            value = value + 11
-            aces = aces + 1
-        else
-            value = value + tonumber(cardValue)
+local function evaluate(result)
+    if result[1].char == result[2].char and result[2].char == result[3].char then
+        if result[1].tier == "small" then return payout_small
+        elseif result[1].tier == "medium" then return payout_medium
+        elseif result[1].tier == "big" then return payout_big
         end
     end
-
-    while value > 21 and aces > 0 do
-        value = value - 10
-        aces = aces - 1
-    end
-
-    return value
+    return 0
 end
 
-local function playBlackjack()
-    local playerHand = {dealCard(), dealCard()}
-    local dealerHand = {dealCard(), dealCard()}
-    
-    -- Show hands
-    print("Player's Hand: " .. table.concat(playerHand, ", "))
-    print("Dealer's Hand: " .. dealerHand[1] .. ", ?")
-    
-    -- Player's turn
-    while true do
-        print("Your hand value: " .. calculateHandValue(playerHand))
-        print("Do you want to hit or stand? (h/s)")
-        local choice = read()
-        if choice == "h" then
-            table.insert(playerHand, dealCard())
-            print("You drew a card: " .. playerHand[#playerHand])
-        elseif choice == "s" then
-            break
-        end
-    end
-
-    -- Dealer's turn
-    while calculateHandValue(dealerHand) < 17 do
-        table.insert(dealerHand, dealCard())
-    end
-    print("Dealer's Hand: " .. table.concat(dealerHand, ", "))
-    
-    -- Determine winner
-    local playerValue = calculateHandValue(playerHand)
-    local dealerValue = calculateHandValue(dealerHand)
-    print("Player's value: " .. playerValue)
-    print("Dealer's value: " .. dealerValue)
-
-    if playerValue > 21 then
-        print("You busted! Dealer wins.")
-        return false
-    elseif dealerValue > 21 then
-        print("Dealer busted! You win!")
-        return true
-    elseif playerValue > dealerValue then
-        print("You win!")
-        return true
-    elseif playerValue < dealerValue then
-        print("Dealer wins.")
-        return false
+local function showResult(result, winMult)
+    monitor.clear()
+    centerText(2, "Result:")
+    local line = 4
+    local symbolsStr = result[1].char .. " | " .. result[2].char .. " | " .. result[3].char
+    centerText(line, symbolsStr)
+    line = line + 2
+    if winMult > 0 then
+        centerText(line, "You Win x" .. winMult .. "!")
     else
-        print("It's a tie!")
-        return nil
+        centerText(line, "You Lose!")
     end
+    sleep(3)
 end
 
--- === MONITOR UI ===
-local monitor = peripheral.wrap("right") -- The connected monitor
---monitor.setTextScale(0.5)
-
--- Draw text centered
-local function drawCentered(y, text)
-    local x = math.floor((monitor.getSize() - #text) / 2)
-    monitor.setCursorPos(x, y)
-    monitor.write(text)
-end
-
--- Button creation
-local function drawButton(y, label)
-    local x = math.floor((monitor.getSize() - #label) / 2)
-    monitor.setCursorPos(x, y)
-    monitor.write("[" .. label .. "]")
-end
-
--- === MAIN ===
-local betAmount = 50
-local playerKey = nil
-local playerBalance = 0
-
--- Start Blackjack loop
-local gameInProgress = false
+-- === Main ===
+drawScreen("idle")
 
 while true do
-    monitor.clear()
-    
-    if not gameInProgress then
-        -- Display the initial screen where the player can play or adjust their bet
-        drawCentered(1, "Welcome to Blackjack!")
-        drawCentered(2, "Your current balance: " .. playerBalance .. " credits")
-        drawCentered(3, "Bet: " .. betAmount .. " credits")
-        
-        drawButton(5, "Play")
-        drawButton(6, "+50 Credits")
-        drawButton(7, "-50 Credits")
-        
-        -- Wait for monitor touch event
-        local event, side, x, y = os.pullEvent("monitor_touch")
-        
-        if y == 5 then
-            -- Pressed "Play" button
-            playerKey = getKey()
-            if not playerKey then
-                drawCentered(8, "Error: No player key found!")
-                sleep(2)
-                gameInProgress = false
-            else
-                -- Request player balance from the server
-                playerBalance = requestBalance(playerKey)
-                
-                if not playerBalance then
-                    drawCentered(8, "Error: Failed to get balance.")
-                    sleep(2)
-                    gameInProgress = false
-                else
-                    drawCentered(8, "Your balance: " .. playerBalance)
-                    
-                    -- Bet handling
-                    while true do
-                        local event, side, x, y = os.pullEvent("monitor_touch")
-                        
-                        if y == 6 then
-                            if betAmount + 50 <= playerBalance then
-                                betAmount = betAmount + 50
-                                monitor.clear()
-                                drawCentered(1, "Bet increased to " .. betAmount)
-                            else
-                                monitor.clear()
-                                drawCentered(1, "Not enough balance!")
-                            end
-                        elseif y == 7 then
-                            if betAmount - 50 >= 50 then
-                                betAmount = betAmount - 50
-                                monitor.clear()
-                                drawCentered(1, "Bet decreased to " .. betAmount)
-                            else
-                                monitor.clear()
-                                drawCentered(1, "Bet cannot go below 50!")
-                            end
-                        end
+    local event, side, x, y = os.pullEvent("monitor_touch")
+    if y == 7 and x >= 10 and x <= 17 then
+        drawScreen("spinning")
 
-                        -- Start the game
-                        if y == 5 then
-                            monitor.clear()
-                            drawCentered(1, "Starting game...")
-                            removeCredits(playerKey, betAmount)
-                            local win = playBlackjack()
-                            if win then
-                                addCredits(playerKey, betAmount * 2)
-                                drawCentered(8, "You win! Added " .. betAmount * 2 .. " credits")
-                            else
-                                drawCentered(8, "You lose.")
-                            end
-                            sleep(2)
-                            gameInProgress = false
-                        end
-                    end
+        local key = getKey()
+        if not key then
+            drawScreen("error")
+            sleep(2)
+            drawScreen("idle")
+        else
+            local balance = requestBalance(key)
+            if balance and balance >= cost then
+                if removeCredits(key, cost) then
+                    local result = spinSlots()
+                    local mult = evaluate(result)
+                    local payout = mult * cost
+                    if payout > 0 then addCredits(key, payout) end
+                    showResult(result, mult)
+                else
+                    drawScreen("error")
+                    sleep(2)
                 end
+            else
+                monitor.clear()
+                centerText(5, "Not enough credits")
+                sleep(2)
             end
         end
+        drawScreen("idle")
     end
 end
