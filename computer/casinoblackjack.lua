@@ -160,11 +160,13 @@ local function playerTurn(player, dealer)
         local _, _, x, y = os.pullEvent("monitor_touch")
         if y == screenHeight - 1 then
             table.insert(player, drawCard())
-			speaker.playSound("entity.item.pickup")
-            if handValue(player) > 21 then return false end
+            speaker.playSound("entity.item.pickup")
+            if handValue(player) > 21 then
+                return false, player -- player bust
+            end
         elseif y == screenHeight then
-			speaker.playSound("block.lever.click")
-            return true
+            speaker.playSound("block.lever.click")
+            return true, player
         end
     end
 end
@@ -172,6 +174,7 @@ end
 local function dealerTurn(dealer)
     while handValue(dealer) < 17 do
         table.insert(dealer, drawCard())
+        sleep(0.5)
     end
 end
 
@@ -187,45 +190,43 @@ local function playGame()
     end
 
     centerText(4, "Einsatz akzeptiert!")
-    sleep(0)
+    sleep(0.5)
 
     local player = { drawCard(), drawCard() }
     local dealer = { drawCard(), drawCard() }
 
-    local continued = playerTurn(player, dealer)
-
-    if not continued then
-        displayHands(player, dealer, false)
-        centerText(screenHeight - 2, "Du hast verloren.", colors.red)
-		speaker.playSound("entity.zombie.infect")
-        sleep(3)
-        return
-    end
+    local continued, finalPlayer = playerTurn(player, dealer)
+    local playerVal = handValue(finalPlayer)
 
     dealerTurn(dealer)
-    displayHands(player, dealer, false)
-    local playerVal = handValue(player)
     local dealerVal = handValue(dealer)
 
-    if dealerVal > 21 then
-        centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet / 2 * 5) .. " Cr", colors.green)
-		speaker.playSound("entity.player.levelup")
+    displayHands(finalPlayer, dealer, false)
+
+    if playerVal > 21 then
+        centerText(screenHeight - 2, "Du hast verloren.", colors.red)
+        speaker.playSound("entity.zombie.infect")
+    elseif dealerVal > 21 then
+        centerText(screenHeight - 2, "Dealer bust! Du gewinnst! +" .. (currentBet / 2 * 5) .. " Cr", colors.green)
+        speaker.playSound("entity.player.levelup")
         addCredits(playerKey, currentBet / 2 * 5)
-	elseif playerVal > dealerVal then
+    elseif playerVal > dealerVal then
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr", colors.green)
-		speaker.playSound("entity.villager.yes")
+        speaker.playSound("entity.villager.yes")
         addCredits(playerKey, currentBet * 2)
     elseif playerVal == dealerVal then
         centerText(screenHeight - 2, "Unentschieden.", colors.yellow)
         centerText(screenHeight - 1, "Einsatz zurück.", colors.yellow)
-		speaker.playSound("block.note_block.hat")
+        speaker.playSound("block.note_block.hat")
         addCredits(playerKey, currentBet)
     else
         centerText(screenHeight - 2, "Dealer gewinnt.", colors.red)
-		speaker.playSound("entity.villager.no")
+        speaker.playSound("entity.villager.no")
     end
+
     sleep(4)
 end
+
 
 -- === Eingabe-Verarbeitung ===
 local function handleTouch(_, _, x, y)
