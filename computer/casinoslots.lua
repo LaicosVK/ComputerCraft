@@ -7,11 +7,11 @@ local payout_big = config.payout_big
 local version = "14"
 
 -- === Setup ===
-local modemSide = "back"
+local modemSide = "bottom"
 local diskDrive = peripheral.find("drive")
 local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
-local speaker = peripheral.wrap("left")
+local speaker = peripheral.wrap("right")
 rednet.open(modemSide)
 
 -- === Symbols & Weights ===
