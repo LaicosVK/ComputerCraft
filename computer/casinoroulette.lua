@@ -1,4 +1,4 @@
-local VERSION = "v15"
+local VERSION = "v16"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -75,7 +75,7 @@ local bets = {
     { label = "Zahl", field = "number", color = colors.green },
 }
 
-local function displayBetOptions(betAmounts, selectedNumber)
+local function displayBetOptions(betAmounts, selectedNumber, selectedBet)
     clear()
     center(1, "ROULETTE " .. VERSION, colors.green)
     for i, b in ipairs(bets) do
@@ -85,9 +85,11 @@ local function displayBetOptions(betAmounts, selectedNumber)
         else
             valueText = tostring(betAmounts[b.field] or 0) .. " Cr"
         end
-        center(2 + i, b.label .. ": " .. valueText, b.color)
+        local prefix = (selectedBet == b.field) and "> " or "  "
+        center(2 + i, prefix .. b.label .. ": " .. valueText, b.color)
     end
-    center(h - 4, "[ -50 ] [ +50 ]    [ -500 ] [ +500 ]")
+    center(h - 5, "[ +50 ] [ +500 ]")
+    center(h - 4, "[ -50 ] [ -500 ]")
     center(h - 2, "[ ZAHL EINGEBEN ]")
     center(h - 1, "[ SPIELEN ]", colors.lime)
 end
@@ -204,7 +206,7 @@ local function main()
     local selectedNumber = 0
 
     while true do
-        displayBetOptions(betAmounts, selectedNumber)
+        displayBetOptions(betAmounts, selectedNumber, selectedBet)
         local _, _, x, y = os.pullEvent("monitor_touch")
 
         if y == h - 1 then
@@ -222,20 +224,20 @@ local function main()
             selectedNumber = handleNumberPad() or 0
             selectedBet = "number"
             speaker.playSound("block.note_block.pling")
-        elseif y == h - 4 then
-            if x < 10 then
-                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
-                speaker.playSound("block.note_block.bass")
-            elseif x < 20 then
+        elseif y == h - 5 then
+            if x < w / 2 then
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
-                speaker.playSound("block.note_block.hat")
-            elseif x < 30 then
-                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 500, 0)
-                speaker.playSound("block.note_block.bass")
             else
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 500
-                speaker.playSound("block.note_block.hat")
             end
+            speaker.playSound("block.note_block.hat")
+        elseif y == h - 4 then
+            if x < w / 2 then
+                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
+            else
+                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 500, 0)
+            end
+            speaker.playSound("block.note_block.bass")
         elseif y >= 3 and y <= 7 then
             local idx = y - 2
             if bets[idx] then
