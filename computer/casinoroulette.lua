@@ -1,4 +1,4 @@
-local VERSION = "v19"
+local VERSION = "v20"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -235,7 +235,7 @@ local function main()
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 500
             end
             speaker.playSound("block.note_block.hat")
-        elseif y == h - 4 then
+        elseif y == h - 2 then
             if x < w / 2 then
                 betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
             else
