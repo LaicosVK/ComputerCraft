@@ -1,4 +1,5 @@
 -- === Konfiguration ===
+local version = "v1"
 local monitor, drive
 for _, name in ipairs(peripheral.getNames()) do
     local t = peripheral.getType(name)
@@ -72,7 +73,7 @@ local bets = {
 
 local function displayBetOptions(betAmounts)
     clear()
-    center(1, "🎲 ROULETTE 🎲", colors.green)
+    center(1, "ROULETTE " .. version, colors.green)
     for i, b in ipairs(bets) do
         local label = b.label .. ": " .. betAmounts[b.field] .. " Cr"
         center(2 + i, label, b.color)
