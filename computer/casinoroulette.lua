@@ -1,4 +1,4 @@
-local VERSION = "v12"
+local VERSION = "v13"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -79,7 +79,7 @@ local function displayBetOptions(betAmounts, selectedNumber)
     for i, b in ipairs(bets) do
         local valueText = ""
         if b.field == "number" then
-            valueText = (selectedNumber or "-") .. " (" .. (betAmounts.number or 0) .. " Cr)"
+            valueText = (selectedNumber or "-") .. " " .. (betAmounts.number or 0) .. " Cr"
         else
             valueText = tostring(betAmounts[b.field] or 0) .. " Cr"
         end
@@ -133,7 +133,7 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     spinAnimation()
     local result, color = spinRoulette()
     clear()
-    center(h / 2, "Ergebnis: " .. result .. " (" .. color .. ")", colors.yellow)
+    center(h / 2, "Ergebnis: " .. result .. " (" .. color .. ")")
     local win = evaluateBet(betAmounts, result, color, selectedNumber)
     if win > 0 then
         center(h / 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
