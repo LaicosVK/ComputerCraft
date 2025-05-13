@@ -1,4 +1,4 @@
-local VERSION = "v17"
+local VERSION = "v18"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -188,7 +188,10 @@ local function handleNumberPad()
                     if label == "C" then
                         input = ""
                     elseif label == "OK" then
-                        return tonumber(input)
+						customNumber = tonumber(input)
+						if customNumber > 36 then
+							customNumber = 36
+                        return customNumber
                     else
                         input = input .. label
                     end
