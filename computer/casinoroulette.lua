@@ -1,4 +1,4 @@
-local VERSION = "v6"
+local VERSION = "v7"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -207,6 +207,7 @@ local function main()
             end
         elseif y == h - 2 then
             selectedNumber = handleNumberPad() or 0
+            betAmounts.number = betAmounts.number or 0  -- Set bet for number
             speaker.playSound("block.note_block.pling")
         elseif y == h - 3 then
             if x < w / 2 then
@@ -220,6 +221,9 @@ local function main()
             local idx = y - 2
             if bets[idx] then
                 selectedBet = bets[idx].field
+                if selectedBet == "number" then
+                    betAmounts.number = betAmounts.number or 0
+                end
                 speaker.playSound("block.lever.click")
             end
         end
