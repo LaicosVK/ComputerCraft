@@ -1,0 +1,1 @@
+wget https://raw.githubusercontent.com/LaicosVK/ComputerCraft/refs/heads/main/startup.lua startup.lua
