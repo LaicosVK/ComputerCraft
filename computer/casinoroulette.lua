@@ -91,7 +91,7 @@ local function spinAnimation()
     for i = 0, 36 do table.insert(symbols, tostring(i)) end
     for i = 1, 20 do
         clear()
-        center(h // 2, "Kugel dreht: " .. symbols[math.random(1, #symbols)], colors.lightGray)
+        center(h / 2, "Kugel dreht: " .. symbols[math.random(1, #symbols)], colors.lightGray)
         sleep(0.1 + (i * 0.02))
     end
 end
@@ -119,31 +119,31 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     for _, b in pairs(betAmounts) do totalBet = totalBet + b end
 
     if totalBet == 0 then
-        center(h // 2, "Kein Einsatz!", colors.red)
+        center(h / 2, "Kein Einsatz!", colors.red)
         sleep(2)
         return
     end
 
     if not removeCredits(playerKey, totalBet) then
-        center(h // 2, "Nicht genug Credits!", colors.red)
+        center(h / 2, "Nicht genug Credits!", colors.red)
         sleep(2)
         return
     end
 
-    center(h // 2, "Kugel dreht...", colors.lightGray)
+    center(h / 2, "Kugel dreht...", colors.lightGray)
     spinAnimation()
     local result, color = spinRoulette()
 
     clear()
-    center(h // 2, "Ergebnis: " .. result .. " (" .. color .. ")", colors.yellow)
+    center(h / 2, "Ergebnis: " .. result .. " (" .. color .. ")", colors.yellow)
     local win = evaluateBet(betAmounts, result, color, selectedNumber)
 
     if win > 0 then
-        center(h // 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
+        center(h / 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
         addCredits(playerKey, win)
         speaker.playSound("entity.player.levelup")
     else
-        center(h // 2 + 1, "Leider verloren!", colors.red)
+        center(h / 2 + 1, "Leider verloren!", colors.red)
         speaker.playSound("entity.villager.no")
     end
 
@@ -154,8 +154,8 @@ end
 local function inputNumber()
     term.redirect(monitor)
     clear()
-    center(h // 2 - 1, "Zahl eingeben (0–36):")
-    term.setCursorPos((w // 2) - 1, h // 2)
+    center(h / 2 - 1, "Zahl eingeben (0–36):")
+    term.setCursorPos((w / 2) - 1, h / 2)
     term.setTextColor(colors.yellow)
     local input = read()
     term.setTextColor(colors.white)
@@ -181,7 +181,7 @@ local function main()
         if y == h - 1 then
             local key = getKey()
             if not key then
-                center(h // 2, "Keine Karte erkannt!", colors.red)
+                center(h / 2, "Keine Karte erkannt!", colors.red)
                 speaker.playSound("entity.item.break")
                 sleep(2)
             else
