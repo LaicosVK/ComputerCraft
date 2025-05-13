@@ -88,10 +88,10 @@ local function displayBetOptions(betAmounts, selectedNumber, selectedBet)
         local prefix = (selectedBet == b.field) and "> " or "  "
         center(2 + i, prefix .. b.label .. ": " .. valueText, b.color)
     end
-    center(h - 5, "[ +50 ] [ +500 ]")
-    center(h - 4, "[ -50 ] [ -500 ]")
-    center(h - 2, "[ ZAHL EINGEBEN ]")
-    center(h - 1, "[ SPIELEN ]", colors.lime)
+    center(h - 3, "[ +50 ] [ +500 ]")
+    center(h - 2, "[ -50 ] [ -500 ]")
+    center(h - 1, "[ ZAHL EINGEBEN ]")
+    center(h - 0, "[ SPIELEN ]", colors.lime)
 end
 
 local function spinAnimation()
@@ -209,7 +209,7 @@ local function main()
         displayBetOptions(betAmounts, selectedNumber, selectedBet)
         local _, _, x, y = os.pullEvent("monitor_touch")
 
-        if y == h - 1 then
+        if y == h - 0 then
             local key = getKey()
             if not key then
                 center(h / 2, "Keine Karte erkannt!", colors.red)
@@ -220,18 +220,18 @@ local function main()
                 betAmounts = { red = 0, black = 0, even = 0, odd = 0, number = 0 }
                 selectedNumber = 0
             end
-        elseif y == h - 2 then
+        elseif y == h - 1 then
             selectedNumber = handleNumberPad() or 0
             selectedBet = "number"
             speaker.playSound("block.note_block.pling")
-        elseif y == h - 5 then
+        elseif y == h - 2 then
             if x < w / 2 then
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
             else
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 500
             end
             speaker.playSound("block.note_block.hat")
-        elseif y == h - 4 then
+        elseif y == h - 3 then
             if x < w / 2 then
                 betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
             else
