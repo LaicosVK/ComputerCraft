@@ -1,4 +1,4 @@
-local VERSION = "v14"
+local VERSION = "v15"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -20,12 +20,14 @@ local function clear()
     monitor.clear()
 end
 
-local function center(y, text, bg)
+local function center(y, text, bg, fg)
     local x = math.floor((w - #text) / 2) + 1
-    monitor.setCursorPos(x, y)
     if bg then monitor.setBackgroundColor(bg) end
+    if fg then monitor.setTextColor(fg) else monitor.setTextColor(colors.white) end
+    monitor.setCursorPos(x, y)
     monitor.write(text)
-    if bg then monitor.setBackgroundColor(colors.black) end
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
 end
 
 local function drawButton(x, y, width, height, label)
@@ -79,13 +81,13 @@ local function displayBetOptions(betAmounts, selectedNumber)
     for i, b in ipairs(bets) do
         local valueText = ""
         if b.field == "number" then
-            valueText = (selectedNumber or "-") .. " " .. (betAmounts.number or 0) .. " Cr"
+            valueText = (selectedNumber or "-") .. " (" .. (betAmounts.number or 0) .. " Cr)"
         else
             valueText = tostring(betAmounts[b.field] or 0) .. " Cr"
         end
         center(2 + i, b.label .. ": " .. valueText, b.color)
     end
-    center(h - 3, "[ -50 ] [ +50 ]")
+    center(h - 4, "[ -50 ] [ +50 ]    [ -500 ] [ +500 ]")
     center(h - 2, "[ ZAHL EINGEBEN ]")
     center(h - 1, "[ SPIELEN ]", colors.lime)
 end
@@ -103,7 +105,8 @@ end
 local function spinRoulette()
     local result = math.random(0, 36)
     local color = result == 0 and "grün" or (result % 2 == 0 and "rot" or "schwarz")
-    return result, color
+    local parity = result == 0 and "-" or (result % 2 == 0 and "GERADE" or "UNGERADE")
+    return result, color, parity
 end
 
 local function evaluateBet(betAmounts, result, color, selectedNumber)
@@ -131,16 +134,20 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     end
     center(h / 2, "Kugel dreht...", colors.lightGray)
     spinAnimation()
-    local result, color = spinRoulette()
+    local result, color, parity = spinRoulette()
     clear()
-    center(h / 2, result .. " (" .. color .. ")")
+    center(h / 2 - 1, tostring(result), colors.yellow)
+    local colorBg = color == "rot" and colors.red or color == "schwarz" and colors.gray or colors.green
+    center(h / 2, color:upper(), colorBg, colors.white)
+    local parityBg = parity == "GERADE" and colors.lightBlue or parity == "UNGERADE" and colors.orange or colors.green
+    center(h / 2 + 1, parity, parityBg, colors.black)
     local win = evaluateBet(betAmounts, result, color, selectedNumber)
     if win > 0 then
-        center(h / 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
+        center(h / 2 + 2, "Gewinn: " .. win .. " Cr", colors.green)
         addCredits(playerKey, win)
         speaker.playSound("entity.player.levelup")
     else
-        center(h / 2 + 1, "Leider verloren!", colors.red)
+        center(h / 2 + 2, "Leider verloren!", colors.red)
         speaker.playSound("entity.villager.no")
     end
     sleep(4)
@@ -189,6 +196,7 @@ local function handleNumberPad()
     end
 end
 
+-- === Main Loop ===
 local function main()
     rednet.open("top")
     local betAmounts = { red = 0, black = 0, even = 0, odd = 0, number = 0 }
@@ -214,12 +222,18 @@ local function main()
             selectedNumber = handleNumberPad() or 0
             selectedBet = "number"
             speaker.playSound("block.note_block.pling")
-        elseif y == h - 3 then
-            if x < w / 2 then
+        elseif y == h - 4 then
+            if x < 10 then
                 betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
                 speaker.playSound("block.note_block.bass")
-            else
+            elseif x < 20 then
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
+                speaker.playSound("block.note_block.hat")
+            elseif x < 30 then
+                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 500, 0)
+                speaker.playSound("block.note_block.bass")
+            else
+                betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 500
                 speaker.playSound("block.note_block.hat")
             end
         elseif y >= 3 and y <= 7 then
