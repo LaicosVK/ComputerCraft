@@ -1,4 +1,4 @@
-local VERSION = "v11"
+local VERSION = "v12"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -77,8 +77,13 @@ local function displayBetOptions(betAmounts, selectedNumber)
     clear()
     center(1, "ROULETTE " .. VERSION, colors.green)
     for i, b in ipairs(bets) do
-        local label = b.label .. ": " .. (b.field == "number" and betAmounts.number or betAmounts[b.field] or 0) .. (b.field ~= "number" and " Cr" or "")
-        center(2 + i, label, b.color)
+        local valueText = ""
+        if b.field == "number" then
+            valueText = (selectedNumber or "-") .. " (" .. (betAmounts.number or 0) .. " Cr)"
+        else
+            valueText = tostring(betAmounts[b.field] or 0) .. " Cr"
+        end
+        center(2 + i, b.label .. ": " .. valueText, b.color)
     end
     center(h - 3, "[ -50 ] [ +50 ]")
     center(h - 2, "[ ZAHL EINGEBEN ]")
@@ -158,8 +163,8 @@ local function handleNumberPad()
             for col = 1, 3 do
                 local label = keys[row][col]
                 local x = 4 + (col - 1) * 6
-                local y = 3 + (row - 1) * 2  -- Adjusted the Y position to fit the height
-                drawButton(x, y, 5, 1, label)  -- Reduced button height to 1
+                local y = 3 + (row - 1) * 2
+                drawButton(x, y, 5, 1, label)
             end
         end
 
@@ -169,7 +174,7 @@ local function handleNumberPad()
             for col = 1, 3 do
                 local bx = 4 + (col - 1) * 6
                 local by = 3 + (row - 1) * 2
-                if x >= bx and x < bx + 5 and y >= by and y < by + 1 then
+                if x >= bx and x < bx + 5 and y == by then
                     local label = keys[row][col]
                     if label == "C" then
                         input = ""
@@ -207,8 +212,7 @@ local function main()
             end
         elseif y == h - 2 then
             selectedNumber = handleNumberPad() or 0
-            betAmounts.number = betAmounts.number or 0  -- Set bet for number
-            selectedBet = "number"  -- Switch the selected bet to "number" after entering a custom number
+            selectedBet = "number"
             speaker.playSound("block.note_block.pling")
         elseif y == h - 3 then
             if x < w / 2 then
@@ -222,9 +226,6 @@ local function main()
             local idx = y - 2
             if bets[idx] then
                 selectedBet = bets[idx].field
-                if selectedBet == "number" then
-                    betAmounts.number = betAmounts.number or 0
-                end
                 speaker.playSound("block.lever.click")
             end
         end
