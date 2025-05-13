@@ -141,7 +141,7 @@ local function main()
         if y == h - 1 then
             local key = getKey()
             if not key then
-                center(h // 2, "Keine Karte erkannt!", colors.red)
+                center(h / 2, "Keine Karte erkannt!", colors.red)
                 speaker.playSound("entity.item.break")
                 sleep(2)
             else
