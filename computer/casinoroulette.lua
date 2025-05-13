@@ -1,4 +1,4 @@
-local VERSION = "v4"
+local VERSION = "v5"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -177,14 +177,18 @@ local function drawNumberPad()
 end
 
 local function handleNumberPad()
+    numberInput = ""  -- Reset input each time
+    drawNumberPad()
+
     while true do
-        drawNumberPad()
         local _, _, x, y = os.pullEvent("monitor_touch")
 
         local col = math.floor((x - 6) / 5) + 1
         local row = math.floor((y - 3) / 2)
+
         if col >= 1 and col <= 3 and row >= 1 and row <= 4 then
             local label = ({ { "1", "2", "3" }, { "4", "5", "6" }, { "7", "8", "9" }, { "C", "0", "OK" } })[row][col]
+
             if label == "C" then
                 numberInput = ""
             elseif label == "OK" then
@@ -192,6 +196,8 @@ local function handleNumberPad()
             else
                 numberInput = numberInput .. label
             end
+
+            drawNumberPad() -- Only redraw after input
         end
     end
 end
