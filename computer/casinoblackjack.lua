@@ -4,7 +4,7 @@ local playerKey = nil
 local currentBet = 50
 local MIN_BET = 50
 local BET_STEP = 50
-local MAX_BET = 10000
+local MAX_BET = 100000
 
 local version = "v10"
 
