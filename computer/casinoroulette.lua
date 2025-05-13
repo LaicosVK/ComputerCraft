@@ -1,4 +1,4 @@
-local VERSION = "v2"
+local VERSION = "v3"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -150,21 +150,50 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     sleep(4)
 end
 
--- === Eingabe für Zahl ===
-local function inputNumber()
-    term.redirect(monitor)
-    clear()
-    center(h / 2 - 1, "Zahl eingeben (0–36):")
-    term.setCursorPos((w / 2) - 1, h / 2)
-    term.setTextColor(colors.yellow)
-    local input = read()
-    term.setTextColor(colors.white)
-    term.redirect(term.native())
-    local num = tonumber(input)
-    if num and num >= 0 and num <= 36 then
-        return num
+-- === Virtuelles Zahlenfeld ===
+
+local numberInput = ""
+
+local function drawNumberPad()
+    monitor.clear()
+    centerText(1, "Zahl eingeben:")
+    centerText(2, numberInput)
+
+    local numbers = {
+        { "1", "2", "3" },
+        { "4", "5", "6" },
+        { "7", "8", "9" },
+        { "C", "0", "OK" }
+    }
+
+    for row = 1, 4 do
+        for col = 1, 3 do
+            local label = numbers[row][col]
+            local x = 6 + (col - 1) * 5
+            local y = 3 + row * 2
+            drawButton(x, y, 3, 1, label)
+        end
     end
-    return 0
+end
+
+local function handleNumberPad()
+    while true do
+        drawNumberPad()
+        local _, _, x, y = os.pullEvent("monitor_touch")
+
+        local col = math.floor((x - 6) / 5) + 1
+        local row = math.floor((y - 3) / 2)
+        if col >= 1 and col <= 3 and row >= 1 and row <= 4 then
+            local label = ({ { "1", "2", "3" }, { "4", "5", "6" }, { "7", "8", "9" }, { "C", "0", "OK" } })[row][col]
+            if label == "C" then
+                numberInput = ""
+            elseif label == "OK" then
+                return tonumber(numberInput)
+            else
+                numberInput = numberInput .. label
+            end
+        end
+    end
 end
 
 -- === Hauptschleife ===
@@ -191,7 +220,7 @@ local function main()
             end
 
         elseif y == h - 2 then
-            selectedNumber = inputNumber()
+            selectedNumber = handleNumberPad()
             speaker.playSound("block.note_block.pling")
 
         elseif y == h - 3 then
