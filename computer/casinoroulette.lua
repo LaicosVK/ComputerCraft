@@ -1,16 +1,17 @@
--- === Konfiguration ===
-local monitor, drive
+local VERSION = "v2"
+
+-- === Setup ===
+local monitor, drive = nil, nil
 for _, name in ipairs(peripheral.getNames()) do
     local t = peripheral.getType(name)
     if t == "monitor" then monitor = peripheral.wrap(name) end
     if t == "drive" then drive = peripheral.wrap(name) end
 end
-if not monitor or not drive then error("Monitor oder Disklaufwerk nicht gefunden.") end
+if not monitor or not drive then error("Monitor oder Laufwerk nicht gefunden.") end
 
 monitor.setTextScale(1)
 local w, h = monitor.getSize()
 
--- === Sounds ===
 local speaker = peripheral.find("speaker")
 
 -- === Debug ===
@@ -18,7 +19,7 @@ local function debug(msg)
     print("[DEBUG] " .. msg)
 end
 
--- === Master Server Verbindung ===
+-- === Master Server Kommunikation ===
 local function getKey()
     if not drive.isDiskPresent() then return nil end
     local path = drive.getMountPath()
@@ -62,46 +63,66 @@ local function center(y, text, bg)
     if bg then monitor.setBackgroundColor(colors.black) end
 end
 
--- === UI Logik ===
+-- === Optionen ===
 local bets = {
     { label = "Rot", field = "red", color = colors.red },
     { label = "Schwarz", field = "black", color = colors.gray },
     { label = "Gerade", field = "even", color = colors.lightBlue },
     { label = "Ungerade", field = "odd", color = colors.orange },
+    { label = "Zahl", field = "number", color = colors.green },
 }
 
-local function displayBetOptions(betAmounts)
+-- === UI ===
+local function displayBetOptions(betAmounts, selectedNumber)
     clear()
-    center(1, "🎲 ROULETTE 🎲", colors.green)
+    center(1, "ROULETTE " .. VERSION, colors.green)
     for i, b in ipairs(bets) do
-        local label = b.label .. ": " .. betAmounts[b.field] .. " Cr"
+        local label = b.label .. ": " .. (b.field == "number" and selectedNumber or betAmounts[b.field] or 0) .. (b.field ~= "number" and " Cr" or "")
         center(2 + i, label, b.color)
     end
-    center(h - 2, "[ +50 ] [ -50 ]")
+    center(h - 3, "[ -50 ] [ +50 ]")
+    center(h - 2, "[ ZAHL EINGEBEN ]")
     center(h - 1, "[ SPIELEN ]", colors.lime)
 end
 
--- === Spielregeln & Berechnung ===
+-- === Animation ===
+local function spinAnimation()
+    local symbols = {}
+    for i = 0, 36 do table.insert(symbols, tostring(i)) end
+    for i = 1, 20 do
+        clear()
+        center(h // 2, "Kugel dreht: " .. symbols[math.random(1, #symbols)], colors.lightGray)
+        sleep(0.1 + (i * 0.02))
+    end
+end
+
+-- === Spielregeln ===
 local function spinRoulette()
-    local options = { "rot", "schwarz" }
     local result = math.random(0, 36)
     local color = result == 0 and "grün" or (result % 2 == 0 and "rot" or "schwarz")
     return result, color
 end
 
-local function evaluateBet(betAmounts, result, color)
+local function evaluateBet(betAmounts, result, color, selectedNumber)
     local payout = 0
     if color == "rot" then payout = payout + (betAmounts.red or 0) * 2 end
     if color == "schwarz" then payout = payout + (betAmounts.black or 0) * 2 end
     if result % 2 == 0 and result ~= 0 then payout = payout + (betAmounts.even or 0) * 2 end
     if result % 2 == 1 then payout = payout + (betAmounts.odd or 0) * 2 end
+    if tonumber(selectedNumber) == result then payout = payout + (betAmounts.number or 0) * 36 end
     return payout
 end
 
--- === Spiel Start ===
-local function playGame(playerKey, betAmounts)
+-- === Spielstart ===
+local function playGame(playerKey, betAmounts, selectedNumber)
     local totalBet = 0
     for _, b in pairs(betAmounts) do totalBet = totalBet + b end
+
+    if totalBet == 0 then
+        center(h // 2, "Kein Einsatz!", colors.red)
+        sleep(2)
+        return
+    end
 
     if not removeCredits(playerKey, totalBet) then
         center(h // 2, "Nicht genug Credits!", colors.red)
@@ -110,32 +131,51 @@ local function playGame(playerKey, betAmounts)
     end
 
     center(h // 2, "Kugel dreht...", colors.lightGray)
-    sleep(2)
+    spinAnimation()
     local result, color = spinRoulette()
-    center(h // 2 + 1, "Ergebnis: " .. result .. " (" .. color .. ")", colors.yellow)
-    speaker.playSound("block.note_block.pling")
 
-    local win = evaluateBet(betAmounts, result, color)
+    clear()
+    center(h // 2, "Ergebnis: " .. result .. " (" .. color .. ")", colors.yellow)
+    local win = evaluateBet(betAmounts, result, color, selectedNumber)
+
     if win > 0 then
-        center(h // 2 + 2, "Gewinn: " .. win .. " Cr", colors.green)
+        center(h // 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
         addCredits(playerKey, win)
         speaker.playSound("entity.player.levelup")
     else
-        center(h // 2 + 2, "Leider verloren!", colors.red)
+        center(h // 2 + 1, "Leider verloren!", colors.red)
         speaker.playSound("entity.villager.no")
     end
 
     sleep(4)
 end
 
+-- === Eingabe für Zahl ===
+local function inputNumber()
+    term.redirect(monitor)
+    clear()
+    center(h // 2 - 1, "Zahl eingeben (0–36):")
+    term.setCursorPos((w // 2) - 1, h // 2)
+    term.setTextColor(colors.yellow)
+    local input = read()
+    term.setTextColor(colors.white)
+    term.redirect(term.native())
+    local num = tonumber(input)
+    if num and num >= 0 and num <= 36 then
+        return num
+    end
+    return 0
+end
+
 -- === Hauptschleife ===
 local function main()
     rednet.open("top")
-    local betAmounts = { red = 0, black = 0, even = 0, odd = 0 }
+    local betAmounts = { red = 0, black = 0, even = 0, odd = 0, number = 0 }
     local selectedBet = "red"
+    local selectedNumber = 0
 
     while true do
-        displayBetOptions(betAmounts)
+        displayBetOptions(betAmounts, selectedNumber)
         local _, _, x, y = os.pullEvent("monitor_touch")
 
         if y == h - 1 then
@@ -145,10 +185,16 @@ local function main()
                 speaker.playSound("entity.item.break")
                 sleep(2)
             else
-                playGame(key, betAmounts)
-                betAmounts = { red = 0, black = 0, even = 0, odd = 0 }
+                playGame(key, betAmounts, selectedNumber)
+                betAmounts = { red = 0, black = 0, even = 0, odd = 0, number = 0 }
+                selectedNumber = 0
             end
+
         elseif y == h - 2 then
+            selectedNumber = inputNumber()
+            speaker.playSound("block.note_block.pling")
+
+        elseif y == h - 3 then
             if x < w / 2 then
                 betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
                 speaker.playSound("block.note_block.bass")
@@ -156,10 +202,11 @@ local function main()
                 betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
                 speaker.playSound("block.note_block.hat")
             end
-        else
-            local optionIndex = y - 2
-            if bets[optionIndex] then
-                selectedBet = bets[optionIndex].field
+
+        elseif y >= 3 and y <= 7 then
+            local idx = y - 2
+            if bets[idx] then
+                selectedBet = bets[idx].field
                 speaker.playSound("block.lever.click")
             end
         end
