@@ -1,4 +1,4 @@
-local VERSION = "v16"
+local VERSION = "v17"
 
 -- === Setup ===
 local monitor, drive = nil, nil
