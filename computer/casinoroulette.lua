@@ -1,4 +1,4 @@
-local VERSION = "v6"
+local VERSION = "v9"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -211,10 +211,10 @@ local function main()
             speaker.playSound("block.note_block.pling")
         elseif y == h - 3 then
             if x < w / 2 then
-                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
+                betAmounts.number = math.max((betAmounts.number or 0) - 50, 0)  -- Apply change to number bet
                 speaker.playSound("block.note_block.bass")
             else
-                betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
+                betAmounts.number = (betAmounts.number or 0) + 50  -- Apply change to number bet
                 speaker.playSound("block.note_block.hat")
             end
         elseif y >= 3 and y <= 7 then
