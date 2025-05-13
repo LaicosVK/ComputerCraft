@@ -1,4 +1,4 @@
-local VERSION = "v3"
+local VERSION = "v4"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -156,8 +156,8 @@ local numberInput = ""
 
 local function drawNumberPad()
     monitor.clear()
-    centerText(1, "Zahl eingeben:")
-    centerText(2, numberInput)
+    center(1, "Zahl eingeben:")
+    center(2, numberInput)
 
     local numbers = {
         { "1", "2", "3" },
