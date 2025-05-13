@@ -1,4 +1,4 @@
-local VERSION = "v9"
+local VERSION = "v10"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -77,7 +77,7 @@ local function displayBetOptions(betAmounts, selectedNumber)
     clear()
     center(1, "ROULETTE " .. VERSION, colors.green)
     for i, b in ipairs(bets) do
-        local label = b.label .. ": " .. (b.field == "number" and selectedNumber or betAmounts[b.field] or 0) .. (b.field ~= "number" and " Cr" or "")
+        local label = b.label .. ": " .. (b.field == "number" and betAmounts.number or betAmounts[b.field] or 0) .. (b.field ~= "number" and " Cr" or "")
         center(2 + i, label, b.color)
     end
     center(h - 3, "[ -50 ] [ +50 ]")
@@ -208,13 +208,14 @@ local function main()
         elseif y == h - 2 then
             selectedNumber = handleNumberPad() or 0
             betAmounts.number = betAmounts.number or 0  -- Set bet for number
+            selectedBet = "number"  -- Switch the selected bet to "number" after entering a custom number
             speaker.playSound("block.note_block.pling")
         elseif y == h - 3 then
             if x < w / 2 then
-                betAmounts.number = math.max((betAmounts.number or 0) - 50, 0)  -- Apply change to number bet
+                betAmounts[selectedBet] = math.max((betAmounts[selectedBet] or 0) - 50, 0)
                 speaker.playSound("block.note_block.bass")
             else
-                betAmounts.number = (betAmounts.number or 0) + 50  -- Apply change to number bet
+                betAmounts[selectedBet] = (betAmounts[selectedBet] or 0) + 50
                 speaker.playSound("block.note_block.hat")
             end
         elseif y >= 3 and y <= 7 then
