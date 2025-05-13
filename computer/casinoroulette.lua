@@ -1,4 +1,4 @@
-local VERSION = "v13"
+local VERSION = "v14"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -95,7 +95,7 @@ local function spinAnimation()
     for i = 0, 36 do table.insert(symbols, tostring(i)) end
     for i = 1, 20 do
         clear()
-        center(h / 2, "Kugel dreht: " .. symbols[math.random(1, #symbols)], colors.lightGray)
+        center(h / 2, symbols[math.random(1, #symbols)], colors.lightGray)
         sleep(0.1 + (i * 0.02))
     end
 end
@@ -133,7 +133,7 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     spinAnimation()
     local result, color = spinRoulette()
     clear()
-    center(h / 2, "Ergebnis: " .. result .. " (" .. color .. ")")
+    center(h / 2, result .. " (" .. color .. ")")
     local win = evaluateBet(betAmounts, result, color, selectedNumber)
     if win > 0 then
         center(h / 2 + 1, "Gewinn: " .. win .. " Cr", colors.green)
