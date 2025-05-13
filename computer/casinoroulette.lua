@@ -158,8 +158,8 @@ local function handleNumberPad()
             for col = 1, 3 do
                 local label = keys[row][col]
                 local x = 4 + (col - 1) * 6
-                local y = 3 + (row - 1) * 3
-                drawButton(x, y, 5, 2, label)
+                local y = 3 + (row - 1) * 2  -- Adjusted the Y position to fit the height
+                drawButton(x, y, 5, 1, label)  -- Reduced button height to 1
             end
         end
 
@@ -168,8 +168,8 @@ local function handleNumberPad()
         for row = 1, 4 do
             for col = 1, 3 do
                 local bx = 4 + (col - 1) * 6
-                local by = 3 + (row - 1) * 3
-                if x >= bx and x < bx + 5 and y >= by and y < by + 2 then
+                local by = 3 + (row - 1) * 2
+                if x >= bx and x < bx + 5 and y >= by and y < by + 1 then
                     local label = keys[row][col]
                     if label == "C" then
                         input = ""
