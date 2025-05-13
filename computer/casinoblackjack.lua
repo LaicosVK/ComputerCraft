@@ -4,9 +4,9 @@ local playerKey = nil
 local currentBet = 50
 local MIN_BET = 50
 local BET_STEP = 50
-local MAX_BET = 1000
+local MAX_BET = 10000
 
-local version = "v9"
+local version = "v10"
 
 local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
