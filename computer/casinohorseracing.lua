@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "10.1"
+local version = "10.2"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -262,5 +262,5 @@ while true do
     deductCredits(players, einsatz)
     showCountdown(5)
     local results = simulateRace(stats)
-    displayResults(results)
+    displayResults(results, einsatz)
 end
