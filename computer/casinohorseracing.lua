@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "11"
+local version = "12"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -98,7 +98,7 @@ local function getPlayerKeys()
                 local f = fs.open(path .. "/player.key", "r")
                 local key = f.readAll()
                 f.close()
-                table.insert(keys, { key = key, horse = color })
+                keys[color] = key
                 print("Spieler erkannt für Pferd:", color)
             end
         end
@@ -107,15 +107,29 @@ local function getPlayerKeys()
 end
 
 -- Guthaben abziehen
-local function deductCredits(players, cost)
+local function deductCredits(playerKeys, cost)
     rednet.open("top")
-    for _, p in ipairs(players) do
-        rednet.broadcast({ type = "remove_credits", key = p.key, amount = cost }, "casino")
+    for color, key in pairs(playerKeys) do
+        rednet.broadcast({ type = "remove_credits", key = key, amount = cost }, "casino")
         local _, res = rednet.receive("casino", 5)
         if res and res.ok then
-            print("Guthaben abgezogen für:", p.horse)
+            print("Guthaben abgezogen für:", color)
         else
-            print("Fehler beim Abzug für:", p.horse)
+            print("Fehler beim Abzug für:", color)
+        end
+    end
+end
+
+-- Guthaben auszahlen
+local function awardCredits(playerKeys, payouts)
+    rednet.open("top")
+    for color, amount in pairs(payouts) do
+        local key = playerKeys[color]
+        if key then
+            rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
+            print("Guthaben ausgezahlt an:", color, ":", amount)
+        else
+            print("Kein Schlüssel vorhanden für:", color)
         end
     end
 end
@@ -204,23 +218,27 @@ local function simulateRace(stats)
     return ranks
 end
 
--- Ergebnisanzeige mit Gewinnberechnung
-local function displayResults(ranks, einsatz)
+-- Ergebnisanzeige mit Auszahlung
+local function displayResults(ranks, einsatz, playerKeys)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
     local totalPot = einsatz * #ranks
     local payouts = {
-        math.floor(totalPot * 0.5),
-        math.floor(totalPot * 0.3),
-        math.floor(totalPot * 0.2)
+        [ranks[1]] = math.floor(totalPot * 0.5),
+        [ranks[2]] = math.floor(totalPot * 0.3),
+        [ranks[3]] = math.floor(totalPot * 0.2)
     }
+
     for i, color in ipairs(ranks) do
         local y = 1 + i
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
-        local gewinn = payouts[i] or 0
+        local gewinn = payouts[color] or 0
         centerText(y, string.format("%d. %s  +%d", i, color, gewinn), colors.white, bg)
     end
+
+    awardCredits(playerKeys, payouts)
+
     if speaker then
         for i = 1, 3 do
             speaker.playNote("bell", 3 + i, 8)
@@ -253,9 +271,9 @@ while true do
         timer = timer - 1
     end
 
-    local players = getPlayerKeys()
-    deductCredits(players, einsatz)
+    local playerKeys = getPlayerKeys()
+    deductCredits(playerKeys, einsatz)
     showCountdown(5)
     local results = simulateRace(stats)
-    displayResults(results, einsatz)
+    displayResults(results, einsatz, playerKeys)
 end
