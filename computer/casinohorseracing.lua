@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "13"
+local version = "14"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -124,7 +124,7 @@ local function awardCredits(playerKeys, payouts)
             rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
             print("Guthaben ausgezahlt an:", color, ":", amount)
         else
-            print("Kein Guthaben ausgezahlt für:", color)
+            print("Kein Einsatz, keine Auszahlung für:", color)
         end
     end
 end
@@ -229,8 +229,10 @@ local function displayResults(ranks, einsatz, playerKeys)
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
         local gewinn = payouts[color] or 0
-        local msg = playerKeys[color] and string.format("%d. %s  +%d", i, color, gewinn)
-                  or string.format("%d. %s  Kein Einsatz", i, color)
+        local msg = string.format("%d. %s  +%d", i, color, gewinn)
+        if not playerKeys[color] and gewinn > 0 then
+            msg = msg .. " (kein Einsatz)"
+        end
         centerText(y, msg, colors.white, bg)
     end
 
