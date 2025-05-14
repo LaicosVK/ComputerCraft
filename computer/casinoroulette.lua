@@ -1,4 +1,4 @@
-local VERSION = "v20"
+local VERSION = "v21"
 
 -- === Setup ===
 local monitor, drive = nil, nil
@@ -96,10 +96,19 @@ end
 
 local function spinAnimation()
     local symbols = {}
-    for i = 0, 36 do table.insert(symbols, tostring(i)) end
+    for i = 0, 36 do table.insert(symbols, i) end
     for i = 1, 20 do
+        local num = symbols[math.random(1, #symbols)]
+        local color = num == 0 and "grün" or (num % 2 == 0 and "rot" or "schwarz")
+        local parity = num == 0 and "-" or (num % 2 == 0 and "GERADE" or "UNGERADE")
+        local colorBg = color == "rot" and colors.red or color == "schwarz" and colors.gray or colors.green
+        local parityBg = parity == "GERADE" and colors.lightBlue or parity == "UNGERADE" and colors.orange or colors.green
+
         clear()
-        center(h / 2, symbols[math.random(1, #symbols)], colors.lightGray)
+        center(h / 2 - 1, tostring(num), colors.lightGray)
+        center(h / 2, color:upper(), colorBg, colors.white)
+        center(h / 2 + 1, parity, parityBg, colors.black)
+
         sleep(0.1 + (i * 0.02))
     end
 end
@@ -138,7 +147,7 @@ local function playGame(playerKey, betAmounts, selectedNumber)
     spinAnimation()
     local result, color, parity = spinRoulette()
     clear()
-    center(h / 2 - 1, tostring(result), colors.yellow)
+    center(h / 2 - 1, tostring(result))
     local colorBg = color == "rot" and colors.red or color == "schwarz" and colors.gray or colors.green
     center(h / 2, color:upper(), colorBg, colors.white)
     local parityBg = parity == "GERADE" and colors.lightBlue or parity == "UNGERADE" and colors.orange or colors.green
