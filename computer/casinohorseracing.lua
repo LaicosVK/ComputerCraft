@@ -1,6 +1,6 @@
--- Pferderennen v13
+-- Pferderennen v14
 
-local version = "13"
+local version = "14"
 
 local RENN_INTERVAL = 10
 local EINSATZ_MIN = 500
@@ -221,7 +221,7 @@ local function displayResults(ranks, einsatz, eligiblePlayers)
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
         local gewinn = payouts[i] or 0
-        local text = string.format("%d. %s  +%d", i, color, gewinn)
+        local text = string.format("%d. %s  +%d (%d)", i, color, gewinn, gewinn)
         centerText(y, text, colors.white, bg)
 
         if eligiblePlayers[color] and gewinn > 0 then
