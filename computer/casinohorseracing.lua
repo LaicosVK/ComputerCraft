@@ -1,12 +1,12 @@
 -- Horse Racing Game Script
-local version = "8"
+local version = "9"
 
--- Configuration
-local RACE_INTERVAL = 10 -- seconds (for testing)
-local ENTRY_COST_MIN = 500
-local ENTRY_COST_MAX = 1000
+-- Konfiguration
+local RENN_INTERVAL = 10 -- Sekunden (für Test)
+local EINSATZ_MIN = 500
+local EINSATZ_MAX = 1000
 
--- Horse definitions
+-- Pferdedaten
 local horses = {
     { color = "purple", colorCode = colors.purple },
     { color = "lightBlue", colorCode = colors.lightBlue },
@@ -16,7 +16,7 @@ local horses = {
     { color = "red", colorCode = colors.red }
 }
 
--- Disk drive mapping
+-- Laufwerk-Zuordnung
 local diskDriveMapping = {
     ["drive_27"] = "purple",
     ["drive_32"] = "lightBlue",
@@ -26,7 +26,7 @@ local diskDriveMapping = {
     ["drive_28"] = "red"
 }
 
--- Peripherals
+-- Peripherie
 local monitor = peripheral.find("monitor")
 local speaker = peripheral.find("speaker")
 local modem = peripheral.find("modem", function(_, obj)
@@ -34,13 +34,13 @@ local modem = peripheral.find("modem", function(_, obj)
 end)
 
 if not monitor or not modem then
-    error("Monitor or wireless modem not found.")
+    error("Monitor oder drahtloses Modem nicht gefunden.")
 end
 
 monitor.setTextScale(2)
 local width, height = monitor.getSize()
 
--- Utility functions
+-- Hilfsfunktionen
 local function clearMonitor()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -70,25 +70,25 @@ local function getColorCodeByName(name)
     return colors.black
 end
 
--- Idle screen
+-- Startbildschirm
 local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
-    centerText(1, "Horse Racing Game v" .. version, colors.white)
-    centerText(2, string.format("Next race in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
-    centerText(3, "Entry Cost: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " credits", colors.cyan)
-    centerText(4, "Horse Stats", colors.white)
-    centerText(5, "        S  E  A St Ag F", colors.lightGray)
+    centerText(1, "Pferderennen v" .. version, colors.white)
+    centerText(2, string.format("Nächstes Rennen in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
+    centerText(3, "Einsatz: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " Credits", colors.cyan)
+    centerText(4, "Pferde-Statistiken", colors.white)
+    centerText(5, "         GES  AUS  BES  STA  GESCH  KONZ", colors.lightGray)
 
     for i, horse in ipairs(horses) do
         local s = horseStats[horse.color]
         local y = 5 + i
         fillLine(y, horse.colorCode)
-        local statLine = string.format("%-8s %d  %d  %d  %d  %d  %d", horse.color, s.spd, s.endu, s.acc, s.sta, s.agi, s.foc)
+        local statLine = string.format("%-9s  %d    %d    %d    %d     %d      %d", horse.color, s.spd, s.endu, s.acc, s.sta, s.agi, s.foc)
         centerText(y, statLine, colors.white, horse.colorCode)
     end
 end
 
--- Get players
+-- Spielererkennung
 local function getPlayerKeys()
     local keys = {}
     for drive, color in pairs(diskDriveMapping) do
@@ -99,23 +99,23 @@ local function getPlayerKeys()
                 local key = f.readAll()
                 f.close()
                 table.insert(keys, { key = key, horse = color })
-                print("Detected player for horse:", color)
+                print("Spieler erkannt für Pferd:", color)
             end
         end
     end
     return keys
 end
 
--- Deduct credits
+-- Guthaben abziehen
 local function deductCredits(players, cost)
     rednet.open("top")
     for _, p in ipairs(players) do
         rednet.broadcast({ type = "remove_credits", key = p.key, amount = cost }, "casino")
         local _, res = rednet.receive("casino", 5)
         if res and res.ok then
-            print("Credits deducted for:", p.horse)
+            print("Guthaben abgezogen für:", p.horse)
         else
-            print("Failed to deduct for:", p.horse)
+            print("Fehler beim Abzug für:", p.horse)
         end
     end
 end
@@ -124,13 +124,13 @@ end
 local function showCountdown(seconds)
     for i = seconds, 1, -1 do
         clearMonitor()
-        centerText(math.floor(height / 2), "Race starts in " .. i .. "...", colors.red)
+        centerText(math.floor(height / 2), "Rennen startet in " .. i .. "...", colors.red)
         if speaker then speaker.playNote("bell", 3, 8) end
         sleep(1)
     end
 end
 
--- Race simulation
+-- Rennsimulation
 local function simulateRace(stats)
     local positions, speeds, timers = {}, {}, {}
     local finished, ranks, rankMap = {}, {}, {}
@@ -151,13 +151,13 @@ local function simulateRace(stats)
                 timer.tick = timer.tick + 1
                 if timer.tick > s.endu then timer.fatigue = true end
 
-                local topSpeed = timer.fatigue and math.max(1, s.spd - 1) or s.spd
-                local baseSpeed = math.min(topSpeed, math.floor(speeds[horse.color] + 1))
-                if speeds[horse.color] < topSpeed then
+                local maxSpeed = timer.fatigue and math.max(1, s.spd - 1) or s.spd
+                local currentSpeed = math.min(maxSpeed, math.floor(speeds[horse.color] + 1))
+                if speeds[horse.color] < maxSpeed then
                     speeds[horse.color] = speeds[horse.color] + s.acc / 10
                 end
 
-                local move = math.random(0, baseSpeed)
+                local move = math.random(0, currentSpeed)
                 if math.random(1, 10) <= s.agi then move = move + 1 end
                 if math.random(1, 10) > s.foc then move = math.max(0, move - 1) end
 
@@ -204,10 +204,10 @@ local function simulateRace(stats)
     return ranks
 end
 
--- Results
+-- Ergebnisanzeige
 local function displayResults(ranks)
     clearMonitor()
-    centerText(1, "Race Results", colors.white)
+    centerText(1, "Ergebnisse", colors.white)
     for i, color in ipairs(ranks) do
         local y = 1 + i
         local bg = getColorCodeByName(color)
@@ -223,31 +223,31 @@ local function displayResults(ranks)
     sleep(10)
 end
 
--- Main loop
+-- Hauptschleife
 while true do
-    local cost = math.floor(math.random(ENTRY_COST_MIN, ENTRY_COST_MAX) / 10 + 0.5) * 10
+    local einsatz = math.floor(math.random(EINSATZ_MIN, EINSATZ_MAX) / 10 + 0.5) * 10
     local stats = {}
     for _, h in ipairs(horses) do
         stats[h.color] = {
-            spd = math.random(2, 5),
-            endu = math.random(5, 20),
-            acc = math.random(1, 5),
-            sta = math.random(1, 5),
-            agi = math.random(1, 5),
-            foc = math.random(1, 5),
-            luk = math.random(1, 10)
+            spd = math.random(2, 5),   -- Geschwindigkeit
+            endu = math.random(5, 20), -- Ausdauer
+            acc = math.random(1, 5),   -- Beschleunigung
+            sta = math.random(1, 5),   -- Stabilität
+            agi = math.random(1, 5),   -- Geschick
+            foc = math.random(1, 5),   -- Konzentration
+            luk = math.random(1, 10)   -- Glück (versteckt)
         }
     end
 
-    local timer = RACE_INTERVAL
+    local timer = RENN_INTERVAL
     while timer > 0 do
-        displayIdleScreen(timer, cost, stats)
+        displayIdleScreen(timer, einsatz, stats)
         sleep(1)
         timer = timer - 1
     end
 
     local players = getPlayerKeys()
-    deductCredits(players, cost)
+    deductCredits(players, einsatz)
     showCountdown(5)
     local results = simulateRace(stats)
     displayResults(results)
