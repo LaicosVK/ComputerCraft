@@ -1,8 +1,8 @@
 -- Horse Racing Game Script
-local version = "4"
+local version = "5"
 
 -- Configuration
-local RACE_INTERVAL = 60 -- seconds
+local RACE_INTERVAL = 10 -- seconds (for testing)
 local ENTRY_COST_MIN = 500
 local ENTRY_COST_MAX = 1000
 
@@ -66,7 +66,7 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
     centerText(1, "Horse Racing Game v" .. version, colors.white)
     centerText(2, string.format("Next race in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
-    centerText(3, "Entry Cost: " .. entryCost .. " credits", colors.cyan)
+    centerText(3, "Entry Cost: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " credits", colors.cyan)
     centerText(4, "Horse Stats", colors.white)
 
     for i, horse in ipairs(horses) do
@@ -121,7 +121,7 @@ end
 
 -- Race simulation
 local function simulateRace(stats)
-    local positions, finished, ranks = {}, {}, {}
+    local positions, finished, ranks, rankMap = {}, {}, {}, {}
     for _, horse in ipairs(horses) do positions[horse.color] = 3 end
     local finish = width - 2
 
@@ -135,6 +135,7 @@ local function simulateRace(stats)
                 if positions[horse.color] >= finish + 1 then
                     finished[horse.color] = true
                     table.insert(ranks, horse.color)
+                    rankMap[horse.color] = #ranks
                 end
             end
         end
@@ -150,10 +151,16 @@ local function simulateRace(stats)
             monitor.write("|")
             monitor.setCursorPos(finish, y)
             monitor.write("|")
-            monitor.setCursorPos(math.min(positions[horse.color], finish + 1), y)
+            local x = math.min(positions[horse.color], finish + 1)
+            monitor.setCursorPos(x, y)
             monitor.write(">")
-            monitor.setCursorPos(math.min(positions[horse.color], finish + 1), y + 1)
+            monitor.setCursorPos(x, y + 1)
             monitor.write(">")
+
+            if rankMap[horse.color] then
+                local place = tostring(rankMap[horse.color]) .. "."
+                centerText(y, place, colors.white, horse.colorCode)
+            end
         end
         sleep(0.4)
     end
@@ -167,7 +174,8 @@ local function displayResults(ranks)
     clearMonitor()
     centerText(1, "Race Results", colors.white)
     for i, color in ipairs(ranks) do
-        centerText(1 + i, string.format("%d. %s", i, color), colors.white)
+        fillLine(1 + i, horses[i].colorCode)
+        centerText(1 + i, string.format("%d. %s", i, color), colors.black, horses[i].colorCode)
     end
     if speaker then
         for i = 1, 3 do
@@ -175,12 +183,12 @@ local function displayResults(ranks)
             sleep(0.2)
         end
     end
-    sleep(6)
+    sleep(10)
 end
 
 -- Main loop
 while true do
-    local cost = math.random(ENTRY_COST_MIN, ENTRY_COST_MAX)
+    local cost = math.floor(math.random(ENTRY_COST_MIN, ENTRY_COST_MAX) / 10 + 0.5) * 10
     local stats = {}
     for _, h in ipairs(horses) do stats[h.color] = math.random(1, 3) end
 
