@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "9"
+local version = "10"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -77,13 +77,13 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     centerText(2, string.format("Nächstes Rennen in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
     centerText(3, "Einsatz: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " Credits", colors.cyan)
     centerText(4, "Pferde-Statistiken", colors.white)
-    centerText(5, "         GES  AUS  BES  STA  GESCH  KONZ", colors.lightGray)
+    centerText(5, "GES  AUS  BES  STA  GESCH  KONZ", colors.lightGray)
 
     for i, horse in ipairs(horses) do
         local s = horseStats[horse.color]
         local y = 5 + i
         fillLine(y, horse.colorCode)
-        local statLine = string.format("%-9s  %d    %d    %d    %d     %d      %d", horse.color, s.spd, s.endu, s.acc, s.sta, s.agi, s.foc)
+        local statLine = string.format(" %2d   %2d   %2d   %2d    %2d     %2d", s.spd, s.endu, s.acc, s.sta, s.agi, s.foc)
         centerText(y, statLine, colors.white, horse.colorCode)
     end
 end
