@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "5"
+local version = "6"
 
 -- Configuration
 local RACE_INTERVAL = 10 -- seconds (for testing)
@@ -61,6 +61,15 @@ local function fillLine(y, color)
     monitor.write(string.rep(" ", width))
 end
 
+local function getColorCodeByName(name)
+    for _, h in ipairs(horses) do
+        if h.color == name then
+            return h.colorCode
+        end
+    end
+    return colors.black
+end
+
 -- Idle screen
 local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
@@ -73,7 +82,7 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
         local stat = horseStats[horse.color]
         local y = 4 + i
         fillLine(y, horse.colorCode)
-        centerText(y, string.format("%s (Speed: %d)", horse.color, stat), colors.black, horse.colorCode)
+        centerText(y, string.format("%s (Speed: %d)", horse.color, stat), colors.white, horse.colorCode)
     end
 end
 
@@ -140,13 +149,11 @@ local function simulateRace(stats)
             end
         end
 
-        -- Display race
         clearMonitor()
         for i, horse in ipairs(horses) do
             local y = 1 + (i - 1) * 2
-            for j = 0, 1 do
-                fillLine(y + j, horse.colorCode)
-            end
+            for j = 0, 1 do fillLine(y + j, horse.colorCode) end
+            monitor.setTextColor(colors.white)
             monitor.setCursorPos(2, y)
             monitor.write("|")
             monitor.setCursorPos(finish, y)
@@ -174,8 +181,10 @@ local function displayResults(ranks)
     clearMonitor()
     centerText(1, "Race Results", colors.white)
     for i, color in ipairs(ranks) do
-        fillLine(1 + i, horses[i].colorCode)
-        centerText(1 + i, string.format("%d. %s", i, color), colors.black, horses[i].colorCode)
+        local y = 1 + i
+        local bg = getColorCodeByName(color)
+        fillLine(y, bg)
+        centerText(y, string.format("%d. %s", i, color), colors.white, bg)
     end
     if speaker then
         for i = 1, 3 do
