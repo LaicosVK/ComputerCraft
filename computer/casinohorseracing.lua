@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "12"
+local version = "13"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -88,9 +88,10 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     end
 end
 
--- Spielererkennung
-local function getPlayerKeys()
-    local keys = {}
+-- Spielererkennung und Abzug
+local function getAndChargePlayers(cost)
+    rednet.open("top")
+    local validKeys = {}
     for drive, color in pairs(diskDriveMapping) do
         if peripheral.isPresent(drive) then
             local path = peripheral.call(drive, "getMountPath")
@@ -98,26 +99,20 @@ local function getPlayerKeys()
                 local f = fs.open(path .. "/player.key", "r")
                 local key = f.readAll()
                 f.close()
-                keys[color] = key
-                print("Spieler erkannt für Pferd:", color)
+
+                rednet.broadcast({ type = "remove_credits", key = key, amount = cost }, "casino")
+                local _, res = rednet.receive("casino", 5)
+
+                if res and res.ok then
+                    validKeys[color] = key
+                    print("Spieler bezahlt für:", color)
+                else
+                    print("Nicht genug Guthaben für:", color)
+                end
             end
         end
     end
-    return keys
-end
-
--- Guthaben abziehen
-local function deductCredits(playerKeys, cost)
-    rednet.open("top")
-    for color, key in pairs(playerKeys) do
-        rednet.broadcast({ type = "remove_credits", key = key, amount = cost }, "casino")
-        local _, res = rednet.receive("casino", 5)
-        if res and res.ok then
-            print("Guthaben abgezogen für:", color)
-        else
-            print("Fehler beim Abzug für:", color)
-        end
-    end
+    return validKeys
 end
 
 -- Guthaben auszahlen
@@ -129,7 +124,7 @@ local function awardCredits(playerKeys, payouts)
             rednet.broadcast({ type = "add_credits", key = key, amount = amount }, "casino")
             print("Guthaben ausgezahlt an:", color, ":", amount)
         else
-            print("Kein Schlüssel vorhanden für:", color)
+            print("Kein Guthaben ausgezahlt für:", color)
         end
     end
 end
@@ -222,7 +217,7 @@ end
 local function displayResults(ranks, einsatz, playerKeys)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
-    local totalPot = einsatz * #ranks
+    local totalPot = einsatz * #playerKeys
     local payouts = {
         [ranks[1]] = math.floor(totalPot * 0.5),
         [ranks[2]] = math.floor(totalPot * 0.3),
@@ -234,7 +229,9 @@ local function displayResults(ranks, einsatz, playerKeys)
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
         local gewinn = payouts[color] or 0
-        centerText(y, string.format("%d. %s  +%d", i, color, gewinn), colors.white, bg)
+        local msg = playerKeys[color] and string.format("%d. %s  +%d", i, color, gewinn)
+                  or string.format("%d. %s  Kein Einsatz", i, color)
+        centerText(y, msg, colors.white, bg)
     end
 
     awardCredits(playerKeys, payouts)
@@ -254,13 +251,13 @@ while true do
     local stats = {}
     for _, h in ipairs(horses) do
         stats[h.color] = {
-            spd = math.random(2, 5),   -- Geschwindigkeit
-            endu = math.random(5, 20), -- Ausdauer
-            acc = math.random(1, 5),   -- Beschleunigung
-            sta = math.random(1, 5),   -- Stabilität
-            agi = math.random(1, 5),   -- Geschick
-            foc = math.random(1, 5),   -- Konzentration
-            luk = math.random(1, 10)   -- Glück (versteckt)
+            spd = math.random(2, 5),
+            endu = math.random(5, 20),
+            acc = math.random(1, 5),
+            sta = math.random(1, 5),
+            agi = math.random(1, 5),
+            foc = math.random(1, 5),
+            luk = math.random(1, 10)
         }
     end
 
@@ -271,8 +268,7 @@ while true do
         timer = timer - 1
     end
 
-    local playerKeys = getPlayerKeys()
-    deductCredits(playerKeys, einsatz)
+    local playerKeys = getAndChargePlayers(einsatz)
     showCountdown(5)
     local results = simulateRace(stats)
     displayResults(results, einsatz, playerKeys)
