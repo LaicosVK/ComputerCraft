@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "10"
+local version = "10.1"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -205,15 +205,26 @@ local function simulateRace(stats)
 end
 
 -- Ergebnisanzeige
-local function displayResults(ranks)
+local function displayResults(ranks, einsatz)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
+
+    local payouts = {
+        [1] = 4,
+        [2] = 2,
+        [3] = 1
+    }
+
     for i, color in ipairs(ranks) do
         local y = 1 + i
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
-        centerText(y, string.format("%d. %s", i, color), colors.white, bg)
+
+        local payout = payouts[i] and einsatz * payouts[i] or 0
+        local text = string.format("%d. %s – %d Credits", i, color, payout)
+        centerText(y, text, colors.white, bg)
     end
+
     if speaker then
         for i = 1, 3 do
             speaker.playNote("bell", 3 + i, 8)
@@ -222,6 +233,7 @@ local function displayResults(ranks)
     end
     sleep(10)
 end
+
 
 -- Hauptschleife
 while true do
