@@ -1,12 +1,11 @@
--- Horse Racing Game Script
+-- Pferderennen v13
+
 local version = "13"
 
--- Konfiguration
-local RENN_INTERVAL = 10 -- Sekunden (für Test)
+local RENN_INTERVAL = 10
 local EINSATZ_MIN = 500
 local EINSATZ_MAX = 1000
 
--- Pferdedaten
 local horses = {
     { color = "purple", colorCode = colors.purple },
     { color = "lightBlue", colorCode = colors.lightBlue },
@@ -16,7 +15,6 @@ local horses = {
     { color = "red", colorCode = colors.red }
 }
 
--- Laufwerk-Zuordnung
 local diskDriveMapping = {
     ["drive_27"] = "purple",
     ["drive_32"] = "lightBlue",
@@ -26,7 +24,6 @@ local diskDriveMapping = {
     ["drive_28"] = "red"
 }
 
--- Peripherie
 local monitor = peripheral.find("monitor")
 local speaker = peripheral.find("speaker")
 local modem = peripheral.find("modem", function(_, obj)
@@ -40,7 +37,6 @@ end
 monitor.setTextScale(2)
 local width, height = monitor.getSize()
 
--- Hilfsfunktionen
 local function clearMonitor()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -70,7 +66,6 @@ local function getColorCodeByName(name)
     return colors.black
 end
 
--- Startbildschirm
 local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
     centerText(1, "Pferderennen v" .. version, colors.white)
@@ -88,7 +83,6 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     end
 end
 
--- Spielererkennung
 local function getPlayerKeys()
     local keys = {}
     for drive, color in pairs(diskDriveMapping) do
@@ -105,10 +99,9 @@ local function getPlayerKeys()
     return keys
 end
 
--- Guthaben abziehen
 local function verifyAndDeductCredits(playerKeys, cost)
     local verifiedPlayers = {}
-    local failedPlayers = {}
+    local rejectedPlayers = {}
     rednet.open("top")
     for color, key in pairs(playerKeys) do
         rednet.broadcast({ type = "remove_credits", key = key, amount = cost }, "casino")
@@ -117,14 +110,13 @@ local function verifyAndDeductCredits(playerKeys, cost)
             verifiedPlayers[color] = key
             print("Guthaben abgezogen für:", color)
         else
-            failedPlayers[color] = true
+            rejectedPlayers[color] = true
             print("Nicht genügend Guthaben für:", color)
         end
     end
-    return verifiedPlayers, failedPlayers
+    return verifiedPlayers, rejectedPlayers
 end
 
--- Countdown
 local function showCountdown(seconds)
     for i = seconds, 1, -1 do
         clearMonitor()
@@ -134,8 +126,7 @@ local function showCountdown(seconds)
     end
 end
 
--- Rennsimulation
-local function simulateRace(stats, eligiblePlayers, failedPlayers)
+local function simulateRace(stats, eligiblePlayers, rejectedPlayers)
     local positions, speeds, timers = {}, {}, {}
     local finished, ranks, rankMap = {}, {}, {}
     for _, horse in ipairs(horses) do
@@ -184,7 +175,8 @@ local function simulateRace(stats, eligiblePlayers, failedPlayers)
         clearMonitor()
         for i, horse in ipairs(horses) do
             local y = 1 + (i - 1) * 2
-            for j = 0, 1 do fillLine(y + j, horse.colorCode) end
+            fillLine(y, horse.colorCode)
+            fillLine(y + 1, horse.colorCode)
             monitor.setTextColor(colors.white)
             monitor.setCursorPos(2, y)
             monitor.write("|")
@@ -193,15 +185,17 @@ local function simulateRace(stats, eligiblePlayers, failedPlayers)
             local x = math.min(positions[horse.color], finish + 1)
             monitor.setCursorPos(x, y)
             monitor.write(">")
-            monitor.setCursorPos(4, y + 1)
-
-            if failedPlayers[horse.color] then
-                monitor.write("Nicht genug Guthaben")
-            end
+            monitor.setCursorPos(x, y + 1)
+            monitor.write(">")
 
             if rankMap[horse.color] then
                 local place = tostring(rankMap[horse.color]) .. "."
                 centerText(y, place, colors.white, horse.colorCode)
+            end
+
+            if rejectedPlayers[horse.color] then
+                monitor.setCursorPos(4, y + 1)
+                monitor.write("X Guthaben fehlt")
             end
         end
         sleep(0.4)
@@ -211,7 +205,6 @@ local function simulateRace(stats, eligiblePlayers, failedPlayers)
     return ranks
 end
 
--- Ergebnisanzeige mit Gewinnauszahlung
 local function displayResults(ranks, einsatz, eligiblePlayers)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
@@ -228,14 +221,12 @@ local function displayResults(ranks, einsatz, eligiblePlayers)
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
         local gewinn = payouts[i] or 0
-        local text
+        local text = string.format("%d. %s  +%d", i, color, gewinn)
+        centerText(y, text, colors.white, bg)
+
         if eligiblePlayers[color] and gewinn > 0 then
             rednet.broadcast({ type = "add_credits", key = eligiblePlayers[color], amount = gewinn }, "casino")
-            text = string.format("%d. %s  +%d Credits", i, color, gewinn)
-        else
-            text = string.format("%d. %s  (kein Gewinn)", i, color)
         end
-        centerText(y, text, colors.white, bg)
     end
 
     if speaker then
@@ -247,7 +238,6 @@ local function displayResults(ranks, einsatz, eligiblePlayers)
     sleep(10)
 end
 
--- Hauptschleife
 while true do
     local einsatz = math.floor(math.random(EINSATZ_MIN, EINSATZ_MAX) / 10 + 0.5) * 10
     local stats = {}
@@ -271,9 +261,9 @@ while true do
     end
 
     local playerKeys = getPlayerKeys()
-    local verifiedPlayers, failedPlayers = verifyAndDeductCredits(playerKeys, einsatz)
+    local verifiedPlayers, rejectedPlayers = verifyAndDeductCredits(playerKeys, einsatz)
 
     showCountdown(5)
-    local results = simulateRace(stats, verifiedPlayers, failedPlayers)
+    local results = simulateRace(stats, verifiedPlayers, rejectedPlayers)
     displayResults(results, einsatz, verifiedPlayers)
 end
