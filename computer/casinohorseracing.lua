@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "6"
+local version = "6.1"
 
 -- Configuration
 local RACE_INTERVAL = 10 -- seconds (for testing)
