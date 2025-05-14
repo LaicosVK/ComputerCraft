@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "7"
+local version = "8"
 
 -- Configuration
 local RACE_INTERVAL = 10 -- seconds (for testing)
@@ -77,12 +77,14 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     centerText(2, string.format("Next race in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
     centerText(3, "Entry Cost: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " credits", colors.cyan)
     centerText(4, "Horse Stats", colors.white)
+    centerText(5, "        S  E  A St Ag F", colors.lightGray)
 
     for i, horse in ipairs(horses) do
         local s = horseStats[horse.color]
-        local y = 4 + i
+        local y = 5 + i
         fillLine(y, horse.colorCode)
-        centerText(y, string.format("%s S:%d E:%d A:%d St:%d Ag:%d F:%d", horse.color, s.spd, s.endu, s.acc, s.sta, s.agi, s.foc), colors.white, horse.colorCode)
+        local statLine = string.format("%-8s %d  %d  %d  %d  %d  %d", horse.color, s.spd, s.endu, s.acc, s.sta, s.agi, s.foc)
+        centerText(y, statLine, colors.white, horse.colorCode)
     end
 end
 
@@ -147,7 +149,6 @@ local function simulateRace(stats)
             local timer = timers[horse.color]
             if not finished[horse.color] then
                 timer.tick = timer.tick + 1
-
                 if timer.tick > s.endu then timer.fatigue = true end
 
                 local topSpeed = timer.fatigue and math.max(1, s.spd - 1) or s.spd
@@ -190,6 +191,7 @@ local function simulateRace(stats)
             monitor.write(">")
             monitor.setCursorPos(x, y + 1)
             monitor.write(">")
+
             if rankMap[horse.color] then
                 local place = tostring(rankMap[horse.color]) .. "."
                 centerText(y, place, colors.white, horse.colorCode)
