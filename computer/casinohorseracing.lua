@@ -1,5 +1,5 @@
 -- Horse Racing Game Script
-local version = "12"
+local version = "13"
 
 -- Konfiguration
 local RENN_INTERVAL = 10 -- Sekunden (für Test)
@@ -108,6 +108,7 @@ end
 -- Guthaben abziehen
 local function verifyAndDeductCredits(playerKeys, cost)
     local verifiedPlayers = {}
+    local failedPlayers = {}
     rednet.open("top")
     for color, key in pairs(playerKeys) do
         rednet.broadcast({ type = "remove_credits", key = key, amount = cost }, "casino")
@@ -116,10 +117,11 @@ local function verifyAndDeductCredits(playerKeys, cost)
             verifiedPlayers[color] = key
             print("Guthaben abgezogen für:", color)
         else
+            failedPlayers[color] = true
             print("Nicht genügend Guthaben für:", color)
         end
     end
-    return verifiedPlayers
+    return verifiedPlayers, failedPlayers
 end
 
 -- Countdown
@@ -133,7 +135,7 @@ local function showCountdown(seconds)
 end
 
 -- Rennsimulation
-local function simulateRace(stats, eligiblePlayers)
+local function simulateRace(stats, eligiblePlayers, failedPlayers)
     local positions, speeds, timers = {}, {}, {}
     local finished, ranks, rankMap = {}, {}, {}
     for _, horse in ipairs(horses) do
@@ -191,11 +193,10 @@ local function simulateRace(stats, eligiblePlayers)
             local x = math.min(positions[horse.color], finish + 1)
             monitor.setCursorPos(x, y)
             monitor.write(">")
-            monitor.setCursorPos(x, y + 1)
-            if eligiblePlayers[horse.color] then
-                monitor.write(">")
-            else
-                monitor.write("X Guthaben fehlt")
+            monitor.setCursorPos(4, y + 1)
+
+            if failedPlayers[horse.color] then
+                monitor.write("Nicht genug Guthaben")
             end
 
             if rankMap[horse.color] then
@@ -230,7 +231,7 @@ local function displayResults(ranks, einsatz, eligiblePlayers)
         local text
         if eligiblePlayers[color] and gewinn > 0 then
             rednet.broadcast({ type = "add_credits", key = eligiblePlayers[color], amount = gewinn }, "casino")
-            text = string.format("%d. %s  +%d", i, color, gewinn)
+            text = string.format("%d. %s  +%d Credits", i, color, gewinn)
         else
             text = string.format("%d. %s  (kein Gewinn)", i, color)
         end
@@ -270,9 +271,9 @@ while true do
     end
 
     local playerKeys = getPlayerKeys()
-    local verifiedPlayers = verifyAndDeductCredits(playerKeys, einsatz)
+    local verifiedPlayers, failedPlayers = verifyAndDeductCredits(playerKeys, einsatz)
 
     showCountdown(5)
-    local results = simulateRace(stats, verifiedPlayers)
+    local results = simulateRace(stats, verifiedPlayers, failedPlayers)
     displayResults(results, einsatz, verifiedPlayers)
 end
