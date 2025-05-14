@@ -1,9 +1,9 @@
 -- Horse Racing Game Script
 
-local version = "1"
+local version = "2"
 
 -- Configuration
-local RACE_INTERVAL = 300 -- 5 minutes in seconds
+local RACE_INTERVAL = 60 -- seconds
 local ENTRY_COST_MIN = 500
 local ENTRY_COST_MAX = 1000
 
@@ -39,7 +39,7 @@ if not monitor or not modem then
 end
 
 -- Set monitor text scale
-monitor.setTextScale(0.5)
+monitor.setTextScale(2)
 local width, height = monitor.getSize()
 
 -- Function to clear monitor
