@@ -1,13 +1,12 @@
--- Horse Racing Game Script with Expanded Stats
+-- Horse Racing Game Script with Stats and Original Layout
 
-local version = "7"
+local version = "4"
 
 -- Configuration
-local RACE_INTERVAL = 10 -- seconds for testing
+local RACE_INTERVAL = 10 -- seconds
 local ENTRY_COST_MIN = 500
 local ENTRY_COST_MAX = 1000
 
--- Horse definitions
 local horses = {
     { color = "purple", colorCode = colors.purple },
     { color = "lightBlue", colorCode = colors.lightBlue },
@@ -17,7 +16,6 @@ local horses = {
     { color = "red", colorCode = colors.red }
 }
 
--- Disk drive mapping
 local diskDriveMapping = {
     ["drive_27"] = "purple",
     ["drive_32"] = "lightBlue",
@@ -27,7 +25,6 @@ local diskDriveMapping = {
     ["drive_28"] = "red"
 }
 
--- Initialize peripherals
 local monitor = peripheral.find("monitor")
 local speaker = peripheral.find("speaker")
 local modem = peripheral.find("modem", function(name, obj)
@@ -41,7 +38,6 @@ end
 monitor.setTextScale(2)
 local width, height = monitor.getSize()
 
--- Helper functions
 local function clearMonitor()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -56,7 +52,6 @@ local function centerText(y, text, textColor, bgColor)
     monitor.write(text)
 end
 
--- Display idle screen
 local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
     centerText(1, "Horse Racing " .. version, colors.white)
@@ -74,7 +69,6 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     end
 end
 
--- Read player keys from disk drives
 local function getPlayerKeys()
     local playerKeys = {}
     for driveName, horseColor in pairs(diskDriveMapping) do
@@ -91,16 +85,14 @@ local function getPlayerKeys()
     return playerKeys
 end
 
--- Deduct credits from player
 local function deductCredits(playerKeys, entryCost)
     for _, player in ipairs(playerKeys) do
         rednet.open("top")
         rednet.broadcast({ type = "remove_credits", key = player.key, amount = entryCost }, "casino")
-        local id, response = rednet.receive("casino", 5)
+        rednet.receive("casino", 5)
     end
 end
 
--- Calculate move distance
 local function calculateMove(stats, tick)
     local base = math.random(1, stats.spd)
     local enduranceFactor = (tick <= stats.endu) and 1 or 0.5
@@ -110,12 +102,13 @@ local function calculateMove(stats, tick)
     return math.floor((base + accelFactor + luckBoost) * enduranceFactor * (staminaRoll / stats.sta))
 end
 
--- Simulate race
 local function simulateRace(horseStats)
     local positions, finished, rankings, ticks = {}, {}, {}, 0
     local finishLine = width - 2
 
-    for _, horse in ipairs(horses) do positions[horse.color] = 1 end
+    for _, horse in ipairs(horses) do
+        positions[horse.color] = 1
+    end
 
     while #rankings < #horses do
         ticks = ticks + 1
@@ -130,14 +123,13 @@ local function simulateRace(horseStats)
             end
         end
 
-        -- Display race
         clearMonitor()
         for i, horse in ipairs(horses) do
             local y = 2 + (i - 1) * 2
             for j = 0, 1 do
                 monitor.setCursorPos(1, y + j)
-                monitor.setBackgroundColor(colors.gray)
-                monitor.write("|" .. string.rep(" ", finishLine - 2) .. "|")
+                monitor.setBackgroundColor(colors.black)
+                monitor.write("|" .. string.rep(" ", width - 2) .. "|")
             end
 
             monitor.setCursorPos(positions[horse.color], y)
@@ -160,23 +152,23 @@ local function simulateRace(horseStats)
     return rankings
 end
 
--- Show result screen
 local function displayResults(rankings)
+    clearMonitor()
+    centerText(1, "Race Results", colors.white)
     for i, horseColor in ipairs(rankings) do
-        clearMonitor()
-        local horse = nil
-        for _, h in ipairs(horses) do if h.color == horseColor then horse = h end end
-        if horse then
-            monitor.setBackgroundColor(horse.colorCode)
-            monitor.clear()
-            centerText(2, string.format("%d. %s", i, horse.color), colors.white, horse.colorCode)
-            sleep(2)
+        local horseColorCode = nil
+        for _, h in ipairs(horses) do
+            if h.color == horseColor then
+                horseColorCode = h.colorCode
+                break
+            end
         end
+        local text = string.format("%d. %s", i, horseColor)
+        centerText(1 + i, text, colors.white, horseColorCode)
     end
-    sleep(2)
+    sleep(6)
 end
 
--- Main loop
 while true do
     local entryCost = math.random(ENTRY_COST_MIN, ENTRY_COST_MAX)
     local horseStats = {}
