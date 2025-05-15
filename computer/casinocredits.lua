@@ -2,6 +2,7 @@
 local monitor = peripheral.find("monitor")
 local wirelessModem = nil
 local driveName = nil
+local creditsgain = 100000
 
 -- === Debug-Funktion ===
 local function debug(msg)
@@ -117,7 +118,7 @@ local function sendRequest(action)
     end
 
     local msgType = (action == "add") and "add_credits" or "remove_credits"
-	rednet.broadcast({ type = msgType, key = key, amount = 50 }, "casino")
+	rednet.broadcast({ type = msgType, key = key, amount = creditsgain }, "casino")
     debug("Anfrage gesendet: " .. action)
 
     -- Warte auf Antwort
@@ -147,8 +148,8 @@ end
 while true do
     monitor.clear()
     center("Casino Terminal", 1)
-    drawButton("+50 Credits", 4, colors.green)
-    drawButton("-50 Credits", 6, colors.red)
+    drawButton("+" .. creditsgain .. " Credits", 4, colors.green)
+    drawButton("-" .. creditsgain .. " Credits", 6, colors.red)
 
     local clicked = waitForButtons({
         { label = "+5 Credits", y = 4 },
