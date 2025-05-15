@@ -1,6 +1,6 @@
 -- Pferderennen v14 (Modified)
 
-local version = "15"
+local version = "16"
 
 local RENN_INTERVAL = 10
 local EINSATZ_MIN = 500
@@ -202,17 +202,12 @@ end
 local function displayResults(ranks, einsatz, playerStates)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
-    local totalPot = 0
-    for _, state in pairs(playerStates) do
-        if state ~= "0" and state ~= "1" then
-            totalPot = totalPot + einsatz
-        end
-    end
 
-    local payouts = {
-        math.floor(totalPot * 0.5),
-        math.floor(totalPot * 0.3),
-        math.floor(totalPot * 0.2)
+    -- Fixed payout multipliers
+    local multipliers = {
+        [1] = 2.0,  -- 1st place gets 2x
+        [2] = 1.5,  -- 2nd place gets 1.5x
+        [3] = 1.25  -- 3rd place gets 1.25x
     }
 
     rednet.open("top")
@@ -220,20 +215,20 @@ local function displayResults(ranks, einsatz, playerStates)
         local y = 1 + i
         local bg = getColorCodeByName(color)
         fillLine(y, bg)
-        local gewinn = payouts[i] or 0
-        local key = playerStates[color]
-        local payoutDone = false
-        local text
 
-        if key ~= "0" and key ~= "1" and gewinn > 0 then
-            rednet.broadcast({ type = "add_credits", key = key, amount = gewinn }, "casino")
-            payoutDone = true
+        local key = playerStates[color]
+        local payout = 0
+
+        if key ~= "0" and key ~= "1" and multipliers[i] then
+            payout = math.floor(einsatz * multipliers[i])
+            rednet.broadcast({ type = "add_credits", key = key, amount = payout }, "casino")
         end
 
+        local text
         if key == "1" then
-            text = string.format("%d. %s  +%d (%d)", i, color, 0, gewinn)
+            text = string.format("%d. %s  +%d (%d)", i, color, 0, payout)
         else
-            text = string.format("%d. %s  +%d", i, color, gewinn)
+            text = string.format("%d. %s  +%d", i, color, payout)
         end
 
         centerText(y, text, colors.white, bg)
