@@ -1,6 +1,6 @@
 -- Pferderennen
 
-local version = "19"
+local version = "21"
 
 local RENN_INTERVAL = 300
 local EINSATZ_MIN = 1000
@@ -70,7 +70,7 @@ local function displayIdleScreen(timeLeft, entryCost, horseStats)
     clearMonitor()
     centerText(1, "Pferderennen v" .. version, colors.white)
     centerText(2, string.format("Nächstes Rennen in: %02d:%02d", math.floor(timeLeft / 60), timeLeft % 60), colors.yellow)
-    centerText(3, "Einsatz: " .. math.floor(entryCost / 10 + 0.5) * 10 .. " Credits", colors.cyan)
+    centerText(3, "Einsatz: " .. math.floor(entryCost / 100 + 0.5) * 100 .. " Credits", colors.cyan)
     centerText(4, "Pferde-Statistiken", colors.white)
     centerText(5, "GES  AUS  BES  STA  GESCH  KONZ", colors.lightGray)
 
@@ -133,6 +133,8 @@ local function simulateRace(stats, playerStates)
     if speaker then speaker.playNote("harp", 2, 8) end
 
     while #ranks < #horses do
+        local remaining = #horses - #ranks
+
         for _, horse in ipairs(horses) do
             local s = stats[horse.color]
             local timer = timers[horse.color]
@@ -141,6 +143,8 @@ local function simulateRace(stats, playerStates)
                 if timer.tick > s.endu then timer.fatigue = true end
 
                 local maxSpeed = timer.fatigue and math.max(1, s.spd - 1) or s.spd
+                if remaining <= 2 then maxSpeed = maxSpeed + 2 end
+
                 local currentSpeed = math.min(maxSpeed, math.floor(speeds[horse.color] + 1))
                 if speeds[horse.color] < maxSpeed then
                     speeds[horse.color] = speeds[horse.color] + s.acc / 10
@@ -204,9 +208,9 @@ local function displayResults(ranks, einsatz, playerStates)
     centerText(1, "Ergebnisse", colors.white)
 
     local multipliers = {
-        [1] = 2.0,
-        [2] = 1.5,
-        [3] = 1.25
+        [1] = 3.0,
+        [2] = 2,
+        [3] = 1.5
     }
 
     rednet.open("top")
