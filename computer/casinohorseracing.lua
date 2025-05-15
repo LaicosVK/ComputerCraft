@@ -1,6 +1,6 @@
 -- Pferderennen
 
-local version = "17"
+local version = "18"
 
 local RENN_INTERVAL = 10
 local EINSATZ_MIN = 500
@@ -229,9 +229,9 @@ local function displayResults(ranks, einsatz, playerStates)
 
         local text
         if key == "1" or key == "0" then
-            text = string.format("%d. %s  +%d", i, color, theoretical)
+            text = string.format("%d. %s  (+%d)", i, color, theoretical)
         else
-            text = string.format("%d. %s  +%d (Payout)", i, color, payout)
+            text = string.format("%d. %s  +%d", i, color, payout)
         end
 
         centerText(y, text, colors.white, bg)
