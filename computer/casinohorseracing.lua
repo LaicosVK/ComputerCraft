@@ -1,10 +1,10 @@
 -- Pferderennen
 
-local version = "18"
+local version = "19"
 
-local RENN_INTERVAL = 10
-local EINSATZ_MIN = 500
-local EINSATZ_MAX = 1000
+local RENN_INTERVAL = 300
+local EINSATZ_MIN = 1000
+local EINSATZ_MAX = 10000
 
 local horses = {
     { color = "purple", colorCode = colors.purple },
