@@ -1,6 +1,6 @@
--- Pferderennen v14 (Modified)
+-- Pferderennen v14
 
-local version = "16"
+local version = "14"
 
 local RENN_INTERVAL = 10
 local EINSATZ_MIN = 500
@@ -203,11 +203,10 @@ local function displayResults(ranks, einsatz, playerStates)
     clearMonitor()
     centerText(1, "Ergebnisse", colors.white)
 
-    -- Fixed payout multipliers
     local multipliers = {
-        [1] = 2.0,  -- 1st place gets 2x
-        [2] = 1.5,  -- 2nd place gets 1.5x
-        [3] = 1.25  -- 3rd place gets 1.25x
+        [1] = 2.0,
+        [2] = 1.5,
+        [3] = 1.25
     }
 
     rednet.open("top")
@@ -218,15 +217,19 @@ local function displayResults(ranks, einsatz, playerStates)
 
         local key = playerStates[color]
         local payout = 0
+        local theoretical = 0
 
-        if key ~= "0" and key ~= "1" and multipliers[i] then
-            payout = math.floor(einsatz * multipliers[i])
-            rednet.broadcast({ type = "add_credits", key = key, amount = payout }, "casino")
+        if multipliers[i] then
+            theoretical = math.floor(einsatz * multipliers[i])
+            if key ~= "0" and key ~= "1" then
+                payout = theoretical
+                rednet.broadcast({ type = "add_credits", key = key, amount = payout }, "casino")
+            end
         end
 
         local text
-        if key == "1" then
-            text = string.format("%d. %s  +%d (%d)", i, color, 0, payout)
+        if key == "1" or key == "0" then
+            text = string.format("%d. %s  +0 (%d)", i, color, theoretical)
         else
             text = string.format("%d. %s  +%d", i, color, payout)
         end
