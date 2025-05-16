@@ -54,7 +54,7 @@ end
 local function scanChests()
     itemList = {}
     print("[DEBUG] Scanning peripherals...")
-    for _, side in ipairs(peripheral.getInventoryName()) do
+    for _, side in ipairs(peripheral.getNames()) do
         local pType = peripheral.getType(side)
         print("[DEBUG] Found peripheral:", side, "Type:", pType)
 
