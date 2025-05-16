@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "10"
+local version = "11"
 local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
 
@@ -58,47 +58,40 @@ local function scanChests()
         local pType = peripheral.getType(side)
         print("[DEBUG] Found peripheral:", side, "Type:", pType)
 
-        if pType == "minecraft:chest" then
+        if peripheral.hasType(side, "inventory") and pType ~= "barrel" then
             local chest = peripheral.wrap(side)
-            local label
-            local success, result = pcall(function() return chest.getInventoryName and chest.getInventoryName() or chest.getCustomName and chest.getCustomName() end)
-            if success and type(result) == "string" then
-                label = result
-            else
-                print("[WARN] Could not read chest label on side:", side)
-                label = ""
-            end
-
-            print("[DEBUG] Chest label:", label)
-
-            if label:find("cc:") then
-                local parts = {}
-                for part in label:gmatch("[^:]+") do table.insert(parts, part) end
-
-                if #parts >= 3 then
-                    local itemName = parts[2]
-                    local itemPrice = tonumber(parts[3])
-                    if itemName and itemPrice then
-                        local items = chest.list()
-                        local count = 0
-                        for _, item in pairs(items) do
-                            count = count + item.count
+            local items = chest.list()
+            local firstSlot = items[1]
+            if firstSlot and firstSlot.name then
+                local label = firstSlot.name
+                print("[DEBUG] Item in first slot:", label)
+                if label:find("cc:") then
+                    local parts = {}
+                    for part in label:gmatch("[^:]+") do table.insert(parts, part) end
+                    if #parts >= 3 then
+                        local itemName = parts[2]
+                        local itemPrice = tonumber(parts[3])
+                        if itemName and itemPrice then
+                            local count = 0
+                            for slot, item in pairs(items) do
+                                if slot ~= 1 then
+                                    count = count + item.count
+                                end
+                            end
+                            table.insert(itemList, {
+                                chest = side,
+                                name = itemName,
+                                price = itemPrice,
+                                stock = count
+                            })
+                            print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
+                        else
+                            print("[WARN] Invalid name or price in:", label)
                         end
-                        table.insert(itemList, {
-                            chest = side,
-                            name = itemName,
-                            price = itemPrice,
-                            stock = count
-                        })
-                        print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
                     else
-                        print("[WARN] Invalid item name or price in label:", label)
+                        print("[WARN] Label format invalid:", label)
                     end
-                else
-                    print("[WARN] Invalid label format (expected cc:item:price):", label)
                 end
-            else
-                print("[INFO] Chest skipped, label missing or no 'cc:' prefix:", label)
             end
         end
     end
@@ -155,7 +148,7 @@ local function tryPurchase(item)
         if confirm and confirm.ok then
             local chest = peripheral.wrap(item.chest)
             for slot, content in pairs(chest.list()) do
-                if content.name then
+                if slot ~= 1 and content.name then
                     chest.pushItems(peripheral.getName(barrel), slot, 1)
                     if peripheral.find("speaker") then
                         peripheral.find("speaker").playNote("bell", 3, 5)
