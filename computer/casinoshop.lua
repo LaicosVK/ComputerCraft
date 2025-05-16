@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "20"
+local version = "20.1"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -14,6 +14,9 @@ local modem = peripheral.find("modem", function(_, obj)
 end)
 local drive = peripheral.find("drive")
 local barrel = peripheral.find("barrel")
+if not barrel then
+    error("Kein Barrel gefunden! Bitte Barrel anschließen.")
+end
 
 local monitor
 for _, name in ipairs(peripheral.getNames()) do
