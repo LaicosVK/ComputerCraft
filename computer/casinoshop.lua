@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "18"
+local version = "18.1"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -172,13 +172,13 @@ local function tryPurchase(item)
     end
 
     rednet.broadcast({ type = "get_credits", key = key }, "casino")
-    local senderId, response = rednet.receive("casino", 3)
+    local senderId, response = rednet.receive("casino", 5)
 
     if response and type(response) == "table" and response.credits then
         print("[DEBUG] Guthaben:", response.credits)
         if response.credits >= item.price then
             rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
-            local _, confirm = rednet.receive("casino", 3)
+            local _, confirm = rednet.receive("casino", 5)
             if confirm and confirm.ok then
                 print("[DEBUG] Purchase confirmed. Dispensing item.")
                 local chest = peripheral.wrap(item.chest)
