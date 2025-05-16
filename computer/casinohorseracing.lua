@@ -1,6 +1,6 @@
 -- Pferderennen
 
-local version = "21"
+local version = "22"
 
 local RENN_INTERVAL = 300
 local EINSATZ_MIN = 1000
@@ -208,9 +208,9 @@ local function displayResults(ranks, einsatz, playerStates)
     centerText(1, "Ergebnisse", colors.white)
 
     local multipliers = {
-        [1] = 3.0,
+        [1] = 2.5,
         [2] = 2,
-        [3] = 1.5
+        [3] = 1.2
     }
 
     rednet.open("top")
