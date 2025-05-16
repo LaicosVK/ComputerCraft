@@ -1,5 +1,7 @@
 -- Gift Shop Script
-local version = "2"
+local version = "3"
+
+local lastInteraction = os.clock()
 
 -- Peripherals
 local modem = peripheral.find("modem", function(_, obj)
