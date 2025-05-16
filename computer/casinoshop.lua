@@ -1,7 +1,7 @@
 -- Gift Shop Script
 local version = "3"
 
-local INACTIVITY_TIMEOUT = 300 -- sekunden
+local idleTimeout = 300 -- sekunden
 local lastInteraction = os.clock()
 
 -- Peripherals
