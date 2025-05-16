@@ -1,7 +1,7 @@
 -- Gift Shop Script
-local version = "14"
+local version = "15"
 local itemsPerPage = 5
-local idleTimeout = 300
+local idleTimeout = 30 -- testing timeout
 
 local lastInteraction = os.clock()
 local selectedScreen = "main"
@@ -23,9 +23,7 @@ for _, name in ipairs(peripheral.getNames()) do
     end
 end
 
-if not monitor then
-    error("Monitor not found")
-end
+if not monitor then error("Monitor not found") end
 
 monitor.setTextScale(1)
 local width, height = monitor.getSize()
@@ -57,7 +55,6 @@ local function scanChests()
         local pType = peripheral.getType(side)
 
         if peripheral.hasType(side, "inventory") and pType ~= "barrel" then
-            print("[DEBUG] Scanning inventory:", side)
             local chest = peripheral.wrap(side)
             local items = chest.list()
             local details = chest.getItemDetail(1)
@@ -86,13 +83,13 @@ local function scanChests()
                         })
                         print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
                     else
-                        print("[WARN] Invalid itemName or itemPrice in label:", details.displayName)
+                        print("[WARN] Invalid name/price:", itemName, itemPrice)
                     end
                 else
-                    print("[WARN] Invalid label format (expected cc:item:price):", details.displayName)
+                    print("[WARN] Invalid format:", details.displayName)
                 end
             else
-                print("[INFO] No labeled item in slot 1 of", side)
+                print("[INFO] No valid label in slot 1 of", side)
             end
         end
     end
@@ -121,10 +118,6 @@ local function displayItems()
     centerText(height, "[ Unten scrollen ]", colors.cyan)
 end
 
-local function inBounds(x, y, bx, by, bw, bh)
-    return x >= bx and x <= bx + bw - 1 and y >= by and y <= by + bh - 1
-end
-
 local function getPlayerKey()
     if diskDrive.isDiskPresent() then
         local mount = diskDrive.getMountPath()
@@ -139,15 +132,23 @@ local function getPlayerKey()
 end
 
 local function tryPurchase(item)
-    if item.stock <= 0 then return end
+    print("[DEBUG] Attempting purchase:", item.name)
+    if item.stock <= 0 then
+        print("[DEBUG] Item out of stock.")
+        return
+    end
     local key = getPlayerKey()
-    if not key then return end
+    if not key then
+        print("[DEBUG] No player key found.")
+        return
+    end
     rednet.broadcast({ type = "get_credits", key = key }, "casino")
     local _, response = rednet.receive("casino", 3)
     if response and response.credits and response.credits >= item.price then
         rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
         local _, confirm = rednet.receive("casino", 3)
         if confirm and confirm.ok then
+            print("[DEBUG] Credits removed. Dispensing item.")
             local chest = peripheral.wrap(item.chest)
             for slot, content in pairs(chest.list()) do
                 if slot ~= 1 and content.name then
@@ -158,7 +159,11 @@ local function tryPurchase(item)
                     break
                 end
             end
+        else
+            print("[DEBUG] Failed to confirm credit removal.")
         end
+    else
+        print("[DEBUG] Not enough credits or no response.")
     end
 end
 
@@ -176,8 +181,9 @@ while true do
     local e, side, x, y = os.pullEventRaw()
     if e == "monitor_touch" then
         lastInteraction = os.clock()
+        print("[DEBUG] Monitor touched at:", x, y)
 
-        if selectedScreen == "main" and inBounds(x, y, 1, 4, width, 1) then
+        if selectedScreen == "main" and y == 4 then
             selectedScreen = "items"
             scrollOffset = 0
             scanChests()
@@ -189,10 +195,12 @@ while true do
             elseif y == height and (scrollOffset + itemsPerPage) < #itemList then
                 scrollOffset = scrollOffset + 1
                 displayItems()
-            elseif y >= 2 and y <= 1 + itemsPerPage then
-                local idx = scrollOffset + (y - 2)
-                if itemList[idx + 1] then
-                    tryPurchase(itemList[idx + 1])
+            elseif y >= 2 and y <= itemsPerPage + 1 then
+                local idx = scrollOffset + (y - 2) + 1
+                print("[DEBUG] Trying to buy item at list index:", idx)
+                if itemList[idx] then
+                    tryPurchase(itemList[idx])
+                    scanChests()
                     displayItems()
                 end
             end
