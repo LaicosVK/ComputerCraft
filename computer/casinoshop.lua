@@ -1,8 +1,11 @@
 -- Gift Shop Script
-local version = "3"
-
+local version = "4"
+local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
+
 local lastInteraction = os.clock()
+local selectedScreen = "main"
+local scrollOffset = 0
 
 -- Peripherals
 local modem = peripheral.find("modem", function(_, obj)
