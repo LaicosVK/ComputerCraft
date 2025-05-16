@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "17"
+local version = "18"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -29,7 +29,7 @@ monitor.setTextScale(1)
 local width, height = monitor.getSize()
 rednet.open("top")
 
--- Functions
+-- Utility Functions
 local function clearMonitor()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -47,15 +47,53 @@ local function showMessage(message, color, duration)
     sleep(duration or 2)
 end
 
+local function displayLoadingAnimation()
+    clearMonitor()
+    centerText(math.floor(height / 2), "Lade Artikel...", colors.cyan)
+    for i = 1, 3 do
+        sleep(0.3)
+        monitor.write(".")
+    end
+end
+
+-- Display Functions
 local function displayMain()
     clearMonitor()
     centerText(2, "Geschenkeshop v" .. version, colors.yellow)
     centerText(4, "[ Kaufen ]", colors.lime)
 end
 
+local function displayItems()
+    clearMonitor()
+    if #itemList == 0 then
+        centerText(math.floor(height / 2), "Keine Artikel gefunden", colors.red)
+        return
+    end
+
+    centerText(1, "[ Oben scrollen ]", colors.cyan)
+    for i = 1, itemsPerPage do
+        local idx = scrollOffset + i
+        local y = i + 1
+        if itemList[idx] then
+            local item = itemList[idx]
+            local bg = (i % 2 == 0) and colors.gray or colors.lightGray
+            monitor.setBackgroundColor(bg)
+            monitor.setCursorPos(1, y)
+            monitor.clearLine()
+            monitor.setTextColor(item.stock > 0 and colors.white or colors.red)
+            local text = item.stock > 0 and (item.name .. " - " .. item.price .. "¢") or (item.name .. " - AUSVERKAUFT")
+            monitor.write(text)
+        end
+    end
+    monitor.setBackgroundColor(colors.black)
+    centerText(height, "[ Unten scrollen ]", colors.cyan)
+end
+
+-- Inventory Scanner
 local function scanChests()
     itemList = {}
     print("[DEBUG] Scanning peripherals...")
+    displayLoadingAnimation()
 
     for _, side in ipairs(peripheral.getNames()) do
         local pType = peripheral.getType(side)
@@ -103,32 +141,7 @@ local function scanChests()
     print("[DEBUG] Total items loaded:", #itemList)
 end
 
-local function displayItems()
-    clearMonitor()
-    if #itemList == 0 then
-        centerText(math.floor(height / 2), "Keine Artikel gefunden", colors.red)
-        return
-    end
-
-    centerText(1, "[ Oben scrollen ]", colors.cyan)
-    for i = 1, itemsPerPage do
-        local idx = scrollOffset + i
-        local y = i + 1
-        if itemList[idx] then
-            local item = itemList[idx]
-            local bg = (i % 2 == 0) and colors.gray or colors.lightGray
-            monitor.setBackgroundColor(bg)
-            monitor.setCursorPos(1, y)
-            monitor.clearLine()
-            monitor.setTextColor(item.stock > 0 and colors.white or colors.red)
-            local text = item.stock > 0 and (item.name .. " - " .. item.price .. "¢") or (item.name .. " - AUSVERKAUFT")
-            monitor.write(text)
-        end
-    end
-    monitor.setBackgroundColor(colors.black)
-    centerText(height, "[ Unten scrollen ]", colors.cyan)
-end
-
+-- Helper
 local function getPlayerKey()
     if diskDrive.isDiskPresent() then
         local mount = diskDrive.getMountPath()
@@ -142,6 +155,7 @@ local function getPlayerKey()
     return nil
 end
 
+-- Purchase Logic
 local function tryPurchase(item)
     print("[DEBUG] Attempting purchase:", item.name)
     if item.stock <= 0 then
@@ -149,6 +163,7 @@ local function tryPurchase(item)
         showMessage("Ausverkauft!", colors.red)
         return
     end
+
     local key = getPlayerKey()
     if not key then
         print("[DEBUG] No keycard found.")
@@ -157,30 +172,37 @@ local function tryPurchase(item)
     end
 
     rednet.broadcast({ type = "get_credits", key = key }, "casino")
-    local _, response = rednet.receive("casino", 3)
-    if response and response.credits and response.credits >= item.price then
-        rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
-        local _, confirm = rednet.receive("casino", 3)
-        if confirm and confirm.ok then
-            print("[DEBUG] Purchase confirmed. Dispensing item.")
-            local chest = peripheral.wrap(item.chest)
-            for slot, content in pairs(chest.list()) do
-                if slot ~= 1 and content.name then
-                    chest.pushItems(peripheral.getName(barrel), slot, 1)
-                    if peripheral.find("speaker") then
-                        peripheral.find("speaker").playNote("bell", 3, 5)
+    local senderId, response = rednet.receive("casino", 3)
+
+    if response and type(response) == "table" and response.credits then
+        print("[DEBUG] Guthaben:", response.credits)
+        if response.credits >= item.price then
+            rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
+            local _, confirm = rednet.receive("casino", 3)
+            if confirm and confirm.ok then
+                print("[DEBUG] Purchase confirmed. Dispensing item.")
+                local chest = peripheral.wrap(item.chest)
+                for slot, content in pairs(chest.list()) do
+                    if slot ~= 1 and content.name then
+                        chest.pushItems(peripheral.getName(barrel), slot, 1)
+                        if peripheral.find("speaker") then
+                            peripheral.find("speaker").playNote("bell", 3, 5)
+                        end
+                        break
                     end
-                    break
                 end
+                showMessage("Kauf erfolgreich!", colors.lime)
+            else
+                print("[DEBUG] remove_credits not confirmed.")
+                showMessage("Fehler beim Kauf!", colors.red)
             end
-            showMessage("Kauf erfolgreich!", colors.lime)
         else
-            print("[DEBUG] Failed to confirm credit removal.")
-            showMessage("Fehler bei Kauf", colors.red)
+            print("[DEBUG] Not enough credits.")
+            showMessage("Nicht genug Guthaben!", colors.red)
         end
     else
-        print("[DEBUG] Not enough credits or no response.")
-        showMessage("Nicht genug Guthaben!", colors.red)
+        print("[DEBUG] Keine Antwort von Casino oder ungültiges Format.")
+        showMessage("Verbindung fehlgeschlagen", colors.red)
     end
 end
 
