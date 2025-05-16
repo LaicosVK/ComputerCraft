@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "19"
+local version = "20"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -29,7 +29,7 @@ monitor.setTextScale(1)
 local width, height = monitor.getSize()
 rednet.open("top")
 
--- Utility Functions
+-- Utility
 local function clearMonitor()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -49,10 +49,10 @@ end
 
 local function displayLoadingAnimation()
     clearMonitor()
-    centerText(math.floor(height / 2), "Lade Artikel...", colors.cyan)
+    centerText(math.floor(height / 2), "Lade Artikel", colors.cyan)
     for i = 1, 3 do
-        sleep(0.3)
         monitor.write(".")
+        sleep(0.3)
     end
 end
 
@@ -67,22 +67,13 @@ local function getKey()
     return key
 end
 
-local function getCredits(key)
-    rednet.broadcast({ type = "get_credits", key = key }, "casino")
-    local _, msg = rednet.receive("casino", 2)
-    if msg and type(msg) == "table" and msg.credits then
-        return msg.credits
-    end
-    return nil
-end
-
 local function removeCredits(key, amount)
     rednet.broadcast({ type = "remove_credits", key = key, amount = amount }, "casino")
     local _, msg = rednet.receive("casino", 2)
     return msg and msg.ok
 end
 
--- Display Functions
+-- Display
 local function displayMain()
     clearMonitor()
     centerText(2, "Geschenkeshop v" .. version, colors.yellow)
@@ -115,7 +106,7 @@ local function displayItems()
     centerText(height, "[ Unten scrollen ]", colors.cyan)
 end
 
--- Inventory Scanner
+-- Scan
 local function scanChests()
     itemList = {}
     print("[DEBUG] Scanning peripherals...")
@@ -167,7 +158,7 @@ local function scanChests()
     print("[DEBUG] Total items loaded:", #itemList)
 end
 
--- Purchase Logic
+-- Buy Logic
 local function tryPurchase(item)
     print("[DEBUG] Attempting purchase:", item.name)
     if item.stock <= 0 then
@@ -181,36 +172,26 @@ local function tryPurchase(item)
         return
     end
 
-    local credits = getCredits(key)
-    if credits == nil then
-        print("[DEBUG] Keine Antwort oder ungültig")
-        showMessage("Fehler bei Guthabenprüfung", colors.red)
-        return
-    end
-
-    if credits < item.price then
+    local ok = removeCredits(key, item.price)
+    if not ok then
         showMessage("Nicht genug Guthaben!", colors.red)
         return
     end
 
-    if removeCredits(key, item.price) then
-        local chest = peripheral.wrap(item.chest)
-        for slot, content in pairs(chest.list()) do
-            if slot ~= 1 and content.name then
-                chest.pushItems(peripheral.getName(barrel), slot, 1)
-                if peripheral.find("speaker") then
-                    peripheral.find("speaker").playNote("bell", 3, 5)
-                end
-                break
+    local chest = peripheral.wrap(item.chest)
+    for slot, content in pairs(chest.list()) do
+        if slot ~= 1 and content.name then
+            chest.pushItems(peripheral.getName(barrel), slot, 1)
+            if peripheral.find("speaker") then
+                peripheral.find("speaker").playNote("bell", 3, 5)
             end
+            break
         end
-        showMessage("Kauf erfolgreich!", colors.lime)
-    else
-        showMessage("Kauf fehlgeschlagen!", colors.red)
     end
+    showMessage("Kauf erfolgreich!", colors.lime)
 end
 
--- Main Loop
+-- Main
 scanChests()
 displayMain()
 
