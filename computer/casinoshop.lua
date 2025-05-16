@@ -1,28 +1,29 @@
 -- Gift Shop Script
-local version = "1.0"
+local version = "2"
 
 -- Peripherals
 local modem = peripheral.find("modem", function(_, obj)
     return peripheral.getType(obj) == "modem" and obj.isWireless()
 end)
-local sideModem = "right"
-local monitor = peripheral.wrap("right")
 local diskDrive = peripheral.find("drive")
 local barrel = peripheral.find("barrel")
-local chestSides = {}
 
--- Config
-local idleTimeout = 30
-local itemsPerPage = 6
-local scrollOffset = 0
-local lastInteraction = os.clock()
+-- Attempt to find the monitor among peripherals on the right modem
+local monitor
+for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "monitor" then
+        monitor = peripheral.wrap(name)
+        break
+    end
+end
 
--- State
-local itemList = {}
-local selectedScreen = "main"
+-- Ensure monitor was found
+if not monitor then
+    error("Monitor not found")
+end
 
--- Setup
---monitor.setTextScale(1)
+-- Setup monitor
+monitor.setTextScale(1)
 local width, height = monitor.getSize()
 rednet.open("top")
 
