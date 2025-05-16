@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "15"
+local version = "16"
 local itemsPerPage = 5
 local idleTimeout = 30 -- testing timeout
 
@@ -172,36 +172,47 @@ scanChests()
 displayMain()
 
 while true do
-    if os.clock() - lastInteraction > idleTimeout and selectedScreen ~= "main" then
+    if os.clock() - lastInteraction > idleTimeout then
+        print("[DEBUG] Timeout - returning to main screen.")
         selectedScreen = "main"
         scrollOffset = 0
         displayMain()
     end
 
-    local e, side, x, y = os.pullEventRaw()
+    local e = os.pullEventRaw()
+    if e == "terminate" then
+        break
+    end
+
     if e == "monitor_touch" then
+        local _, side, x, y = os.pullEvent("monitor_touch")
         lastInteraction = os.clock()
         print("[DEBUG] Monitor touched at:", x, y)
 
         if selectedScreen == "main" and y == 4 then
+            print("[DEBUG] Switching to items screen")
             selectedScreen = "items"
             scrollOffset = 0
             scanChests()
             displayItems()
         elseif selectedScreen == "items" then
             if y == 1 and scrollOffset > 0 then
+                print("[DEBUG] Scrolling up")
                 scrollOffset = scrollOffset - 1
                 displayItems()
             elseif y == height and (scrollOffset + itemsPerPage) < #itemList then
+                print("[DEBUG] Scrolling down")
                 scrollOffset = scrollOffset + 1
                 displayItems()
             elseif y >= 2 and y <= itemsPerPage + 1 then
                 local idx = scrollOffset + (y - 2) + 1
-                print("[DEBUG] Trying to buy item at list index:", idx)
+                print("[DEBUG] Trying to buy item at index:", idx)
                 if itemList[idx] then
                     tryPurchase(itemList[idx])
                     scanChests()
                     displayItems()
+                else
+                    print("[DEBUG] No item at that index.")
                 end
             end
         end
