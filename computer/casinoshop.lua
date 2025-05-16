@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "7"
+local version = "8"
 local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
 
@@ -51,11 +51,14 @@ local function scanChests()
     for _, side in ipairs(peripheral.getNames()) do
         local pType = peripheral.getType(side)
         print("[DEBUG] Found peripheral:", side, "Type:", pType)
+
         if pType == "minecraft:chest" then
-            print("[DEBUG] Checking chest:", side)
-            if side:find("cc:") then
+            local label = peripheral.getLabel(side)
+            print("[DEBUG] Chest label:", label or "nil")
+
+            if label and label:find("cc:") then
                 local parts = {}
-                for part in side:gmatch("[^:]+") do table.insert(parts, part) end
+                for part in label:gmatch("[^:]+") do table.insert(parts, part) end
 
                 if #parts >= 3 then
                     local itemName = parts[2]
@@ -74,18 +77,19 @@ local function scanChests()
                         })
                         print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
                     else
-                        print("[WARN] Invalid name or price in peripheral:", side)
+                        print("[WARN] Invalid item name or price in label:", label)
                     end
                 else
-                    print("[WARN] Invalid chest naming format (expected cc:item:price):", side)
+                    print("[WARN] Invalid label format (expected cc:item:price):", label)
                 end
             else
-                print("[INFO] Chest skipped, no 'cc:' prefix:", side)
+                print("[INFO] Chest skipped, label missing or no 'cc:' prefix:", label or "nil")
             end
         end
     end
     print("[DEBUG] Total items loaded:", #itemList)
 end
+
 
 local function displayItems()
     clearMonitor()
