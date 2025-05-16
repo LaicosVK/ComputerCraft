@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "5"
+local version = "6"
 local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
 
@@ -49,6 +49,7 @@ local function scanChests()
     itemList = {}
     for _, side in ipairs(peripheral.getNames()) do
         if peripheral.getType(side) == "minecraft:chest" then
+            local label = side
             if label:find("cc:") then
                 local parts = {}
                 for part in label:gmatch("[^:]+") do table.insert(parts, part) end
