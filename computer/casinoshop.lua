@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "18.2"
+local version = "19"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -12,7 +12,7 @@ local itemList = {}
 local modem = peripheral.find("modem", function(_, obj)
     return peripheral.getType(obj) == "modem" and obj.isWireless()
 end)
-local diskDrive = peripheral.find("drive")
+local drive = peripheral.find("drive")
 local barrel = peripheral.find("barrel")
 
 local monitor
@@ -54,6 +54,32 @@ local function displayLoadingAnimation()
         sleep(0.3)
         monitor.write(".")
     end
+end
+
+-- === Server-Kommunikation ===
+local function getKey()
+    if not drive.isDiskPresent() then return nil end
+    local path = drive.getMountPath()
+    if not path or not fs.exists(path .. "/player.key") then return nil end
+    local f = fs.open(path .. "/player.key", "r")
+    local key = f.readAll()
+    f.close()
+    return key
+end
+
+local function getCredits(key)
+    rednet.broadcast({ type = "get_credits", key = key }, "casino")
+    local _, msg = rednet.receive("casino", 2)
+    if msg and type(msg) == "table" and msg.credits then
+        return msg.credits
+    end
+    return nil
+end
+
+local function removeCredits(key, amount)
+    rednet.broadcast({ type = "remove_credits", key = key, amount = amount }, "casino")
+    local _, msg = rednet.receive("casino", 2)
+    return msg and msg.ok
 end
 
 -- Display Functions
@@ -141,68 +167,46 @@ local function scanChests()
     print("[DEBUG] Total items loaded:", #itemList)
 end
 
--- Helper
-local function getPlayerKey()
-    if diskDrive.isDiskPresent() then
-        local mount = diskDrive.getMountPath()
-        if mount and fs.exists(mount .. "/player.key") then
-            local file = fs.open(mount .. "/player.key", "r")
-            local key = file.readAll()
-            file.close()
-            return key
-        end
-    end
-    return nil
-end
-
 -- Purchase Logic
 local function tryPurchase(item)
     print("[DEBUG] Attempting purchase:", item.name)
     if item.stock <= 0 then
-        print("[DEBUG] Item out of stock.")
         showMessage("Ausverkauft!", colors.red)
         return
     end
 
-    local key = getPlayerKey()
+    local key = getKey()
     if not key then
-        print("[DEBUG] No keycard found.")
         showMessage("Bitte Karte einlegen!", colors.orange)
         return
     end
 
-    rednet.broadcast({ type = "get_credits", key = key }, "casino")
-    local senderId, response = rednet.receive("casino", 2)
+    local credits = getCredits(key)
+    if credits == nil then
+        print("[DEBUG] Keine Antwort oder ungültig")
+        showMessage("Fehler bei Guthabenprüfung", colors.red)
+        return
+    end
 
-    if response and type(response) == "table" and response.credits then
-        print("[DEBUG] Guthaben:", response.credits)
-        if response.credits >= item.price then
-            rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
-            local _, confirm = rednet.receive("casino", 2)
-            if confirm and confirm.ok then
-                print("[DEBUG] Purchase confirmed. Dispensing item.")
-                local chest = peripheral.wrap(item.chest)
-                for slot, content in pairs(chest.list()) do
-                    if slot ~= 1 and content.name then
-                        chest.pushItems(peripheral.getName(barrel), slot, 1)
-                        if peripheral.find("speaker") then
-                            peripheral.find("speaker").playNote("bell", 3, 5)
-                        end
-                        break
-                    end
+    if credits < item.price then
+        showMessage("Nicht genug Guthaben!", colors.red)
+        return
+    end
+
+    if removeCredits(key, item.price) then
+        local chest = peripheral.wrap(item.chest)
+        for slot, content in pairs(chest.list()) do
+            if slot ~= 1 and content.name then
+                chest.pushItems(peripheral.getName(barrel), slot, 1)
+                if peripheral.find("speaker") then
+                    peripheral.find("speaker").playNote("bell", 3, 5)
                 end
-                showMessage("Kauf erfolgreich!", colors.lime)
-            else
-                print("[DEBUG] remove_credits not confirmed.")
-                showMessage("Fehler beim Kauf!", colors.red)
+                break
             end
-        else
-            print("[DEBUG] Not enough credits.")
-            showMessage("Nicht genug Guthaben!", colors.red)
         end
+        showMessage("Kauf erfolgreich!", colors.lime)
     else
-        print("[DEBUG] Keine Antwort von Casino oder ungültiges Format.")
-        showMessage("Verbindung fehlgeschlagen", colors.red)
+        showMessage("Kauf fehlgeschlagen!", colors.red)
     end
 end
 
@@ -212,7 +216,7 @@ displayMain()
 
 while true do
     if os.clock() - lastInteraction > idleTimeout then
-        print("[DEBUG] Timeout - returning to main screen.")
+        print("[DEBUG] Timeout - zurück zum Hauptmenü")
         selectedScreen = "main"
         scrollOffset = 0
         displayMain()
@@ -227,29 +231,23 @@ while true do
         print("[DEBUG] Monitor touched at:", x, y)
 
         if selectedScreen == "main" and y == 4 then
-            print("[DEBUG] Switching to items screen")
             selectedScreen = "items"
             scrollOffset = 0
             scanChests()
             displayItems()
         elseif selectedScreen == "items" then
             if y == 1 and scrollOffset > 0 then
-                print("[DEBUG] Scrolling up")
                 scrollOffset = scrollOffset - 1
                 displayItems()
             elseif y == height and (scrollOffset + itemsPerPage) < #itemList then
-                print("[DEBUG] Scrolling down")
                 scrollOffset = scrollOffset + 1
                 displayItems()
             elseif y >= 2 and y <= itemsPerPage + 1 then
                 local idx = scrollOffset + (y - 2) + 1
-                print("[DEBUG] Trying to buy item at index:", idx)
                 if itemList[idx] then
                     tryPurchase(itemList[idx])
                     scanChests()
                     displayItems()
-                else
-                    print("[DEBUG] No item at that index.")
                 end
             end
         end
