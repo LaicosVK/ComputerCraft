@@ -1,7 +1,7 @@
 -- Gift Shop Script
-local version = "11"
+local version = "12"
 local itemsPerPage = 5
-local idleTimeout = 300 -- sekunden
+local idleTimeout = 30 -- sekunden
 
 local lastInteraction = os.clock()
 local selectedScreen = "main"
@@ -62,8 +62,8 @@ local function scanChests()
             local chest = peripheral.wrap(side)
             local items = chest.list()
             local firstSlot = items[1]
-            if firstSlot and firstSlot.name then
-                local label = firstSlot.name
+            if firstSlot and firstSlot.diaplayName then
+                local label = firstSlot.displayName
                 print("[DEBUG] Item in first slot:", label)
                 if label:find("cc:") then
                     local parts = {}
