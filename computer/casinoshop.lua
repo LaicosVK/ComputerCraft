@@ -53,7 +53,7 @@ local function scanChests()
         print("[DEBUG] Found peripheral:", side, "Type:", pType)
 
         if pType == "minecraft:chest" then
-            local label = peripheral.getLabel(side)
+            local label = side
             print("[DEBUG] Chest label:", label or "nil")
 
             if label and label:find("cc:") then
