@@ -47,38 +47,53 @@ end
 
 local function scanChests()
     itemList = {}
+    print("[DEBUG] Scanning peripherals...")
     for _, side in ipairs(peripheral.getNames()) do
-        if peripheral.getType(side) == "minecraft:chest" then
-            local label = side
-            if label:find("cc:") then
+        local pType = peripheral.getType(side)
+        print("[DEBUG] Found peripheral:", side, "Type:", pType)
+        if pType == "minecraft:chest" then
+            print("[DEBUG] Checking chest:", side)
+            if side:find("cc:") then
                 local parts = {}
-                for part in label:gmatch("[^:]+") do table.insert(parts, part) end
-                local itemName = parts[2]
-                local itemPrice = tonumber(parts[3])
-                local items = peripheral.call(side, "list")
-                local count = 0
-                for _, item in pairs(items) do
-                    count = count + item.count
+                for part in side:gmatch("[^:]+") do table.insert(parts, part) end
+
+                if #parts >= 3 then
+                    local itemName = parts[2]
+                    local itemPrice = tonumber(parts[3])
+                    if itemName and itemPrice then
+                        local items = peripheral.call(side, "list")
+                        local count = 0
+                        for _, item in pairs(items) do
+                            count = count + item.count
+                        end
+                        table.insert(itemList, {
+                            chest = side,
+                            name = itemName,
+                            price = itemPrice,
+                            stock = count
+                        })
+                        print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
+                    else
+                        print("[WARN] Invalid name or price in peripheral:", side)
+                    end
+                else
+                    print("[WARN] Invalid chest naming format (expected cc:item:price):", side)
                 end
-                table.insert(itemList, {
-                    chest = side,
-                    name = itemName,
-                    price = itemPrice,
-                    stock = count
-                })
+            else
+                print("[INFO] Chest skipped, no 'cc:' prefix:", side)
             end
         end
     end
-end
-
-local function displayMain()
-    clearMonitor()
-    centerText(2, "Geschenkeshop v" .. version, colors.yellow)
-    centerText(4, "[ Kaufen ]", colors.lime)
+    print("[DEBUG] Total items loaded:", #itemList)
 end
 
 local function displayItems()
     clearMonitor()
+    if #itemList == 0 then
+        centerText(height // 2, "Keine Artikel gefunden", colors.red)
+        return
+    end
+
     centerText(1, "[ Oben scrollen ]", colors.cyan)
     for i = 1, itemsPerPage do
         local idx = scrollOffset + i
