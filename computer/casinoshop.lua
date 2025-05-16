@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "20.1"
+local version = "21"
 local itemsPerPage = 5
 local idleTimeout = 30
 
@@ -12,12 +12,23 @@ local itemList = {}
 local modem = peripheral.find("modem", function(_, obj)
     return peripheral.getType(obj) == "modem" and obj.isWireless()
 end)
+
 local drive = peripheral.find("drive")
-local barrel = peripheral.find("barrel")
+
+-- === Barrel suchen über Wired Modem ===
+local barrel
+for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.getType(name) == "barrel" or name:lower():find("barrel") then
+        barrel = peripheral.wrap(name)
+        print("[DEBUG] Barrel gefunden:", name)
+        break
+    end
+end
 if not barrel then
     error("Kein Barrel gefunden! Bitte Barrel anschließen.")
 end
 
+-- Monitor
 local monitor
 for _, name in ipairs(peripheral.getNames()) do
     if peripheral.getType(name) == "monitor" then
@@ -25,7 +36,6 @@ for _, name in ipairs(peripheral.getNames()) do
         break
     end
 end
-
 if not monitor then error("Monitor not found") end
 
 monitor.setTextScale(1)
