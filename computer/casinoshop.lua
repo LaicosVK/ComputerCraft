@@ -45,6 +45,12 @@ local function centerText(y, text, color)
     monitor.write(text)
 end
 
+local function displayMain()
+    clearMonitor()
+    centerText(2, "Geschenkeshop v" .. version, colors.yellow)
+    centerText(4, "[ Kaufen ]", colors.lime)
+end
+
 local function scanChests()
     itemList = {}
     print("[DEBUG] Scanning peripherals...")
