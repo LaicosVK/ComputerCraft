@@ -1,7 +1,7 @@
 -- Gift Shop Script
-local version = "16"
+local version = "17"
 local itemsPerPage = 5
-local idleTimeout = 30 -- testing timeout
+local idleTimeout = 30
 
 local lastInteraction = os.clock()
 local selectedScreen = "main"
@@ -39,6 +39,12 @@ local function centerText(y, text, color)
     monitor.setCursorPos(math.floor((width - #text) / 2) + 1, y)
     monitor.setTextColor(color or colors.white)
     monitor.write(text)
+end
+
+local function showMessage(message, color, duration)
+    clearMonitor()
+    centerText(math.floor(height / 2), message, color or colors.red)
+    sleep(duration or 2)
 end
 
 local function displayMain()
@@ -107,14 +113,19 @@ local function displayItems()
     centerText(1, "[ Oben scrollen ]", colors.cyan)
     for i = 1, itemsPerPage do
         local idx = scrollOffset + i
+        local y = i + 1
         if itemList[idx] then
             local item = itemList[idx]
-            local stockText = item.stock > 0 and (item.name .. " - " .. item.price .. "¢") or (item.name .. " - AUSVERKAUFT")
-            monitor.setCursorPos(2, i + 1)
-            monitor.setTextColor(item.stock > 0 and colors.white or colors.gray)
-            monitor.write(stockText)
+            local bg = (i % 2 == 0) and colors.gray or colors.lightGray
+            monitor.setBackgroundColor(bg)
+            monitor.setCursorPos(1, y)
+            monitor.clearLine()
+            monitor.setTextColor(item.stock > 0 and colors.white or colors.red)
+            local text = item.stock > 0 and (item.name .. " - " .. item.price .. "¢") or (item.name .. " - AUSVERKAUFT")
+            monitor.write(text)
         end
     end
+    monitor.setBackgroundColor(colors.black)
     centerText(height, "[ Unten scrollen ]", colors.cyan)
 end
 
@@ -135,20 +146,23 @@ local function tryPurchase(item)
     print("[DEBUG] Attempting purchase:", item.name)
     if item.stock <= 0 then
         print("[DEBUG] Item out of stock.")
+        showMessage("Ausverkauft!", colors.red)
         return
     end
     local key = getPlayerKey()
     if not key then
-        print("[DEBUG] No player key found.")
+        print("[DEBUG] No keycard found.")
+        showMessage("Bitte Karte einlegen!", colors.orange)
         return
     end
+
     rednet.broadcast({ type = "get_credits", key = key }, "casino")
     local _, response = rednet.receive("casino", 3)
     if response and response.credits and response.credits >= item.price then
         rednet.broadcast({ type = "remove_credits", key = key, amount = item.price }, "casino")
         local _, confirm = rednet.receive("casino", 3)
         if confirm and confirm.ok then
-            print("[DEBUG] Credits removed. Dispensing item.")
+            print("[DEBUG] Purchase confirmed. Dispensing item.")
             local chest = peripheral.wrap(item.chest)
             for slot, content in pairs(chest.list()) do
                 if slot ~= 1 and content.name then
@@ -159,11 +173,14 @@ local function tryPurchase(item)
                     break
                 end
             end
+            showMessage("Kauf erfolgreich!", colors.lime)
         else
             print("[DEBUG] Failed to confirm credit removal.")
+            showMessage("Fehler bei Kauf", colors.red)
         end
     else
         print("[DEBUG] Not enough credits or no response.")
+        showMessage("Nicht genug Guthaben!", colors.red)
     end
 end
 
@@ -180,9 +197,7 @@ while true do
     end
 
     local e = os.pullEventRaw()
-    if e == "terminate" then
-        break
-    end
+    if e == "terminate" then break end
 
     if e == "monitor_touch" then
         local _, side, x, y = os.pullEvent("monitor_touch")
