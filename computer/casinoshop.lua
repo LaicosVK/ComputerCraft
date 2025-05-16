@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "13.1"
+local version = "14"
 local itemsPerPage = 5
 local idleTimeout = 300
 
@@ -190,9 +190,9 @@ while true do
                 scrollOffset = scrollOffset + 1
                 displayItems()
             elseif y >= 2 and y <= 1 + itemsPerPage then
-                local idx = scrollOffset + y - 1
-                if itemList[idx] then
-                    tryPurchase(itemList[idx])
+                local idx = scrollOffset + (y - 2)
+                if itemList[idx + 1] then
+                    tryPurchase(itemList[idx + 1])
                     displayItems()
                 end
             end
