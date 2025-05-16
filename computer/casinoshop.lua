@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "8"
+local version = "9"
 local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
 
@@ -59,10 +59,16 @@ local function scanChests()
         print("[DEBUG] Found peripheral:", side, "Type:", pType)
 
         if pType == "minecraft:chest" then
-            local label = side
-            print("[DEBUG] Chest label:", label or "nil")
+            -- Attempt to get the custom label
+            local success, label = pcall(function() return peripheral.call(side, "getName") end)
+            if not success or not label then
+                print("[WARN] Failed to get label for chest on", side)
+                label = "" -- default to avoid crash
+            end
 
-            if label and label:find("cc:") then
+            print("[DEBUG] Chest label:", label)
+
+            if label:find("cc:") then
                 local parts = {}
                 for part in label:gmatch("[^:]+") do table.insert(parts, part) end
 
@@ -89,13 +95,12 @@ local function scanChests()
                     print("[WARN] Invalid label format (expected cc:item:price):", label)
                 end
             else
-                print("[INFO] Chest skipped, label missing or no 'cc:' prefix:", label or "nil")
+                print("[INFO] Chest skipped, label missing or no 'cc:' prefix:", label)
             end
         end
     end
     print("[DEBUG] Total items loaded:", #itemList)
 end
-
 
 local function displayItems()
     clearMonitor()
