@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "12"
+local version = "13"
 local itemsPerPage = 5
 local idleTimeout = 300
 
