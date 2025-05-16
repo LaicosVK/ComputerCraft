@@ -22,7 +22,7 @@ local itemList = {}
 local selectedScreen = "main"
 
 -- Setup
-monitor.setTextScale(1)
+--monitor.setTextScale(1)
 local width, height = monitor.getSize()
 rednet.open("top")
 
