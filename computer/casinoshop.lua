@@ -1,11 +1,12 @@
 -- Gift Shop Script
-local version = "13"
+local version = "13.1"
 local itemsPerPage = 5
 local idleTimeout = 300
 
 local lastInteraction = os.clock()
 local selectedScreen = "main"
 local scrollOffset = 0
+local itemList = {}
 
 -- Peripherals
 local modem = peripheral.find("modem", function(_, obj)
@@ -51,47 +52,51 @@ end
 local function scanChests()
     itemList = {}
     print("[DEBUG] Scanning peripherals...")
+
     for _, side in ipairs(peripheral.getNames()) do
         local pType = peripheral.getType(side)
-        print("[DEBUG] Found peripheral:", side, "Type:", pType)
 
         if peripheral.hasType(side, "inventory") and pType ~= "barrel" then
+            print("[DEBUG] Scanning inventory:", side)
             local chest = peripheral.wrap(side)
             local items = chest.list()
-            local firstSlot = items[1]
-            if firstSlot and firstSlot.displayName then
-                local label = firstSlot.displayName
-                print("[DEBUG] Item in first slot:", label)
-                if label:find("cc:") then
-                    local parts = {}
-                    for part in label:gmatch("[^:]+") do table.insert(parts, part) end
-                    if #parts >= 3 then
-                        local itemName = parts[2]
-                        local itemPrice = tonumber(parts[3])
-                        if itemName and itemPrice then
-                            local count = 0
-                            for slot, item in pairs(items) do
-                                if slot ~= 1 then
-                                    count = count + item.count
-                                end
+            local details = chest.getItemDetail(1)
+
+            if details and details.displayName and details.displayName:find("cc:") then
+                print("[DEBUG] Found labeled item in slot 1:", details.displayName)
+
+                local parts = {}
+                for part in details.displayName:gmatch("[^:]+") do table.insert(parts, part) end
+
+                if #parts >= 3 then
+                    local itemName = parts[2]
+                    local itemPrice = tonumber(parts[3])
+                    if itemName and itemPrice then
+                        local count = 0
+                        for slot, item in pairs(items) do
+                            if slot ~= 1 and item.count then
+                                count = count + item.count
                             end
-                            table.insert(itemList, {
-                                chest = side,
-                                name = itemName,
-                                price = itemPrice,
-                                stock = count
-                            })
-                            print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
-                        else
-                            print("[WARN] Invalid name or price in:", label)
                         end
+                        table.insert(itemList, {
+                            chest = side,
+                            name = itemName,
+                            price = itemPrice,
+                            stock = count
+                        })
+                        print("[DEBUG] Added item:", itemName, "Price:", itemPrice, "Stock:", count)
                     else
-                        print("[WARN] Label format invalid:", label)
+                        print("[WARN] Invalid itemName or itemPrice in label:", details.displayName)
                     end
+                else
+                    print("[WARN] Invalid label format (expected cc:item:price):", details.displayName)
                 end
+            else
+                print("[INFO] No labeled item in slot 1 of", side)
             end
         end
     end
+
     print("[DEBUG] Total items loaded:", #itemList)
 end
 
