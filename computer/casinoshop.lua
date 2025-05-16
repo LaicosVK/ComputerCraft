@@ -1,7 +1,7 @@
 -- Gift Shop Script
 local version = "12"
 local itemsPerPage = 5
-local idleTimeout = 30 -- sekunden
+local idleTimeout = 300
 
 local lastInteraction = os.clock()
 local selectedScreen = "main"
@@ -14,7 +14,6 @@ end)
 local diskDrive = peripheral.find("drive")
 local barrel = peripheral.find("barrel")
 
--- Attempt to find the monitor among peripherals on the right modem
 local monitor
 for _, name in ipairs(peripheral.getNames()) do
     if peripheral.getType(name) == "monitor" then
@@ -23,12 +22,10 @@ for _, name in ipairs(peripheral.getNames()) do
     end
 end
 
--- Ensure monitor was found
 if not monitor then
     error("Monitor not found")
 end
 
--- Setup monitor
 monitor.setTextScale(1)
 local width, height = monitor.getSize()
 rednet.open("top")
@@ -62,7 +59,7 @@ local function scanChests()
             local chest = peripheral.wrap(side)
             local items = chest.list()
             local firstSlot = items[1]
-            if firstSlot and firstSlot.diaplayName then
+            if firstSlot and firstSlot.displayName then
                 local label = firstSlot.displayName
                 print("[DEBUG] Item in first slot:", label)
                 if label:find("cc:") then
