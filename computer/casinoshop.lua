@@ -1,5 +1,5 @@
 -- Gift Shop Script
-local version = "6"
+local version = "7"
 local itemsPerPage = 5
 local idleTimeout = 300 -- sekunden
 
@@ -90,7 +90,7 @@ end
 local function displayItems()
     clearMonitor()
     if #itemList == 0 then
-        centerText(height // 2, "Keine Artikel gefunden", colors.red)
+        centerText(height / 2, "Keine Artikel gefunden", colors.red)
         return
     end
 
