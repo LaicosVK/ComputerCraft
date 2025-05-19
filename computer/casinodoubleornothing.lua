@@ -1,9 +1,9 @@
 -- Coin Flip Double or Nothing
-local version = "1.1"
+local version = "1.2"
 local initialBet = 100
 local currentBet = initialBet
 local gameState = "title"
-local animationSpeed = 0.05
+local animationSpeed = 0.005
 
 -- Peripherals
 local drive = peripheral.find("drive")
@@ -51,9 +51,13 @@ local function clear()
     monitor.clear()
 end
 
-local function centerText(y, text, color)
-    monitor.setCursorPos(math.floor((width - #text) / 2) + 1, y)
-    monitor.setTextColor(color or colors.white)
+local function fullLineText(y, text, textColor, bgColor)
+    monitor.setCursorPos(1, y)
+    monitor.setBackgroundColor(bgColor or colors.black)
+    monitor.setTextColor(textColor or colors.white)
+    monitor.clearLine()
+    local x = math.floor((width - #text) / 2) + 1
+    monitor.setCursorPos(x, y)
     monitor.write(text)
 end
 
@@ -66,35 +70,28 @@ end
 -- Screens
 local function drawTitle()
     clear()
-    centerText(math.floor(height / 2) - 1, "Double or Nothing", colors.yellow)
-    centerText(math.floor(height / 2), "v" .. version, colors.gray)
-    centerText(math.floor(height / 2) + 2, "[ SPIELEN ]", colors.lime)
+    fullLineText(math.floor(height / 2) - 1, "Double or Nothing", colors.yellow)
+    fullLineText(math.floor(height / 2), "v" .. version, colors.gray)
+    fullLineText(math.floor(height / 2) + 2, "[ SPIELEN ]", colors.black, colors.lime)
     playSound("harp", 1, 2)
 end
 
 local function drawFlipScreen()
     clear()
-    centerText(1, "Einsatz: " .. currentBet .. "¢", colors.yellow)
-    centerText(math.floor(height / 2), "[Münze]", colors.white)
+    fullLineText(1, "Einsatz: " .. currentBet .. "¢", colors.yellow)
+
+    fullLineText(math.floor(height / 2), "[Münze]", colors.white)
 
     -- FLIP Button
-    local flipY = height - 4
-    monitor.setCursorPos(math.floor((width - 8) / 2), flipY)
-    monitor.setBackgroundColor(colors.lime)
-    monitor.setTextColor(colors.black)
-    monitor.write("  FLIP  ")
+    fullLineText(height - 4, "  FLIP  ", colors.black, colors.lime)
 
     -- PAYOUT Button
-    local payoutY = height - 2
-    monitor.setCursorPos(math.floor((width - 10) / 2), payoutY)
-    monitor.setBackgroundColor(colors.red)
-    monitor.setTextColor(colors.white)
-    monitor.write("AUSZAHLEN")
+    fullLineText(height - 2, "AUSZAHLEN", colors.white, colors.red)
 end
 
 local function drawLostScreen()
     clear()
-    centerText(math.floor(height / 2), "Verloren!", colors.red)
+    fullLineText(math.floor(height / 2), "Verloren!", colors.red)
     playSound("bass", 1, 0.5)
     sleep(2)
     gameState = "title"
@@ -115,9 +112,8 @@ local function drawWinAnimation()
 
     for _ = 1, 6 do
         for _, frame in ipairs(frames) do
-            centerText(1, "Einsatz: " .. currentBet .. "¢", colors.yellow)
-            centerText(math.floor(height / 2), frame, colors.cyan)
-            playSound("pling", 1, 1.5)
+            fullLineText(1, "Einsatz: " .. currentBet .. "¢", colors.yellow)
+            fullLineText(math.floor(height / 2), frame, colors.cyan)
             sleep(animationSpeed)
         end
     end
@@ -128,7 +124,7 @@ local function tryStartGame()
     local key = getKey()
     if not key then
         clear()
-        centerText(math.floor(height / 2), "Bitte Karte einlegen!", colors.orange)
+        fullLineText(math.floor(height / 2), "Bitte Karte einlegen!", colors.orange)
         playSound("bass", 1, 0.5)
         sleep(2)
         drawTitle()
@@ -136,7 +132,7 @@ local function tryStartGame()
     end
     if not removeCredits(key, initialBet) then
         clear()
-        centerText(math.floor(height / 2), "Nicht genug Guthaben!", colors.red)
+        fullLineText(math.floor(height / 2), "Nicht genug Guthaben!", colors.red)
         playSound("bass", 1, 0.5)
         sleep(2)
         drawTitle()
@@ -162,7 +158,7 @@ local function tryPayout()
     local key = getKey()
     if not key then
         clear()
-        centerText(math.floor(height / 2), "Karte fehlt!", colors.orange)
+        fullLineText(math.floor(height / 2), "Karte fehlt!", colors.orange)
         playSound("bass", 1, 0.5)
         sleep(2)
         drawFlipScreen()
@@ -170,7 +166,7 @@ local function tryPayout()
     end
     addCredits(key, currentBet)
     clear()
-    centerText(math.floor(height / 2), "Auszahlung: " .. currentBet .. "¢", colors.lime)
+    fullLineText(math.floor(height / 2), "Auszahlung: " .. currentBet .. "¢", colors.lime)
     playSound("harp", 2, 1)
     sleep(2)
     gameState = "title"
@@ -189,16 +185,9 @@ while true do
     if gameState == "title" and y == math.floor(height / 2) + 2 then
         tryStartGame()
     elseif gameState == "game" then
-        local flipY = height - 4
-        local payoutY = height - 2
-        local flipXStart = math.floor((width - 8) / 2)
-        local flipXEnd = flipXStart + 7
-        local payoutXStart = math.floor((width - 10) / 2)
-        local payoutXEnd = payoutXStart + 9
-
-        if y == flipY and x >= flipXStart and x <= flipXEnd then
+        if y == height - 4 then
             tryFlip()
-        elseif y == payoutY and x >= payoutXStart and x <= payoutXEnd then
+        elseif y == height - 2 then
             tryPayout()
         end
     end
