@@ -1,12 +1,13 @@
 -- === CONFIGURATION ===
 local TRADE_VALUES = {
+	["mekanism:ingot_uranium"] = 2000,
 	["minecraft:netherite_ingot"] = 500,
     ["minecraft:diamond"] = 100,
     ["minecraft:gold_ingot"] = 25,
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v5")
+print("v6")
 
 local berechnenLine = 11
 
