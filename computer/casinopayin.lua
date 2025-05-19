@@ -7,7 +7,7 @@ local TRADE_VALUES = {
     ["minecraft:iron_ingot"] = 10
 }
 
-print("v7")
+print("v8")
 
 local berechnenLine = 11
 
@@ -117,7 +117,7 @@ end
 
 local function formatItemName(rawName)
     local name = rawName:gsub("minecraft:", "")           -- Remove namespace
-    name = rawName:gsub("mekanism:", "")           -- Remove namespace
+    name = name:gsub("mekanism:", "")           -- Remove namespace
     name = name:gsub("_", " ")                            -- Replace underscores with spaces
     name = name:gsub("(%a)([%w']*)", function(a,b)        -- Capitalize each word
         return a:upper() .. b:lower()
