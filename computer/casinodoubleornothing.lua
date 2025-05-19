@@ -1,5 +1,5 @@
 -- Coin Flip Double or Nothing
-local version = "3"
+local version = "4"
 local initialBet = 500
 local currentBet = initialBet
 local gameState = "title"
