@@ -1,9 +1,9 @@
 -- Coin Flip Double or Nothing
-local version = "4"
+local version = "5"
 local initialBet = 500
 local currentBet = initialBet
 local gameState = "title"
-local animationSpeed = 1
+local animationSpeed = 0.1
 
 -- Peripherals
 local drive = peripheral.find("drive")
