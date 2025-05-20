@@ -1,12 +1,11 @@
 -- === Blackjack-Spiel (Deutsch) ===
 local monitor, drive, speaker
-local playerKey = nil
-local currentBet = 50
+local version = "v10.2"
 local MIN_BET = 50
 local BET_STEP = 50
-local MAX_BET = 100000
-
-local version = "v10"
+local BIG_BET_STEP = 500
+local MAX_BET = 1000000
+local currentBet = MIN_BET
 local suits = { "\06", "\03", "\04", "\05" }
 local values = { "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K" }
 
@@ -36,13 +35,12 @@ end
 local function centerText(y, text, bgColor)
     local w = select(1, monitor.getSize())
     local x = math.floor((w - #text) / 2) + 1
+    monitor.setCursorPos(x, y)
     if bgColor then
         monitor.setBackgroundColor(bgColor)
-        monitor.setCursorPos(1, y)
         monitor.clearLine()
+        monitor.setCursorPos(x, y)
     end
-    monitor.setCursorPos(x, y)
-    monitor.setTextColor(colors.white)
     monitor.write(text)
     monitor.setBackgroundColor(colors.black)
 end
@@ -57,14 +55,9 @@ local function handValue(hand)
     local total, aces = 0, 0
     for _, card in ipairs(hand) do
         local v = card:sub(1, -2)
-        if v == "A" then
-            total = total + 11
-            aces = aces + 1
-        elseif v == "K" or v == "Q" or v == "J" then
-            total = total + 10
-        else
-            total = total + tonumber(v)
-        end
+        if v == "A" then total = total + 11 aces = aces + 1
+        elseif v == "K" or v == "Q" or v == "J" then total = total + 10
+        else total = total + tonumber(v) end
     end
     while total > 21 and aces > 0 do
         total = total - 10
@@ -73,12 +66,11 @@ local function handValue(hand)
     return total
 end
 
--- === Benutzeroberfläche ===
-local _, screenHeight = monitor.getSize()
+local screenHeight = select(2, monitor.getSize())
 
 local buttonY = {
-    betLine1 = screenHeight - 3,
-    betLine2 = screenHeight - 2,
+    bet50 = screenHeight - 4,
+    bet500 = screenHeight - 3,
     play = screenHeight
 }
 
@@ -86,18 +78,18 @@ local function drawMainScreen()
     clear()
     centerText(2, "Blackjack 5:2 " .. version)
     centerText(4, "Casinokarte einlegen")
-    centerText(screenHeight - 5, "Einsatz: " .. currentBet .. " Credits")
-    centerText(buttonY.betLine1, "[ -500 ] [ -50 ] [ +50 ] [ +500 ]", colors.gray)
-    centerText(buttonY.betLine2, "           [ SPIELEN ]           ", colors.lime)
+    centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Credits")
+    centerText(buttonY.bet50,  "[-50]           [+50]", colors.gray)
+    centerText(buttonY.bet500, "[-500]         [+500]", colors.gray)
+    centerText(buttonY.play,   "   [ SPIELEN ]   ", colors.green)
 end
 
--- === Serverkommunikation ===
 local function getKey()
-    local path = drive.getMountPath()
-    if not path or not fs.exists(path .. "/player.key") then return nil end
-    local f = fs.open(path .. "/player.key", "r")
-    local key = f.readAll()
-    f.close()
+    local mountPath = drive.getMountPath()
+    if not mountPath or not fs.exists(mountPath .. "/player.key") then return nil end
+    local file = fs.open(mountPath .. "/player.key", "r")
+    local key = file.readAll()
+    file.close()
     return key
 end
 
@@ -113,12 +105,11 @@ local function addCredits(key, amount)
     return msg and msg.ok
 end
 
--- === Spiel-Logik ===
 local function displayHands(player, dealer, hideDealer)
     clear()
     if speaker then speaker.playSound("block.piston.extend") end
     centerText(2, "Dealer:")
-    centerText(3, hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")")
+    centerText(3, hideDealer and (dealer[1] .. " ??") or (table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
     centerText(screenHeight - 4, "Deine Hand:")
     centerText(screenHeight - 3, table.concat(player, " ") .. " (" .. handValue(player) .. ")")
 end
@@ -143,20 +134,23 @@ end
 local function dealerTurn(dealer)
     while handValue(dealer) < 17 do
         table.insert(dealer, drawCard())
-        sleep(0.7)
+        sleep(0.5)
     end
 end
 
-local function playGame()
+local function playGame(key)
     clear()
     centerText(2, "Spiel startet...")
     sleep(1)
-
-    if not removeCredits(playerKey, currentBet) then
+    if not removeCredits(key, currentBet) then
         centerText(4, "Nicht genug Credits!")
+        if speaker then speaker.playSound("block.anvil.land") end
         sleep(2)
         return
     end
+
+    centerText(4, "Einsatz akzeptiert!")
+    sleep(0.5)
 
     local player = { drawCard(), drawCard() }
     local dealer = { drawCard(), drawCard() }
@@ -176,52 +170,55 @@ local function playGame()
         local win = currentBet / 2 * 5
         centerText(screenHeight - 2, "Dealer bust! Du gewinnst! +" .. win .. " Cr", colors.green)
         if speaker then speaker.playSound("entity.player.levelup") end
-        addCredits(playerKey, win)
+        addCredits(key, win)
     elseif playerVal > dealerVal then
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr", colors.green)
         if speaker then speaker.playSound("entity.villager.yes") end
-        addCredits(playerKey, currentBet * 2)
+        addCredits(key, currentBet * 2)
     elseif playerVal == dealerVal then
         centerText(screenHeight - 2, "Unentschieden.", colors.yellow)
         centerText(screenHeight - 1, "Einsatz zurück.", colors.yellow)
         if speaker then speaker.playSound("block.note_block.hat") end
-        addCredits(playerKey, currentBet)
+        addCredits(key, currentBet)
     else
         centerText(screenHeight - 2, "Dealer gewinnt.", colors.red)
         if speaker then speaker.playSound("entity.villager.no") end
     end
-
     sleep(4)
 end
 
--- === Eingabe-Verarbeitung ===
-local function handleTouch(_, _, x, y)
-    if y == buttonY.betLine1 then
-        if x <= 10 then
-            currentBet = math.max(MIN_BET, currentBet - 500)
-        elseif x <= 20 then
-            currentBet = math.max(MIN_BET, currentBet - 50)
-        elseif x <= 30 then
-            currentBet = math.min(MAX_BET, currentBet + 50)
+local function handleTouch(_, _, _, y)
+    if y == buttonY.bet50 then
+        local _, x = monitor.getCursorPos()
+        if x < monitor.getSize() / 2 then
+            currentBet = math.max(MIN_BET, currentBet - BET_STEP)
+            if speaker then speaker.playSound("block.note_block.bass") end
         else
-            currentBet = math.min(MAX_BET, currentBet + 500)
+            currentBet = math.min(MAX_BET, currentBet + BET_STEP)
+            if speaker then speaker.playSound("block.note_block.pling") end
         end
-        if speaker then speaker.playSound("block.note_block.pling") end
+    elseif y == buttonY.bet500 then
+        local _, x = monitor.getCursorPos()
+        if x < monitor.getSize() / 2 then
+            currentBet = math.max(MIN_BET, currentBet - BIG_BET_STEP)
+            if speaker then speaker.playSound("block.note_block.bass") end
+        else
+            currentBet = math.min(MAX_BET, currentBet + BIG_BET_STEP)
+            if speaker then speaker.playSound("block.note_block.pling") end
+        end
     elseif y == buttonY.play then
-        playerKey = getKey()
-        if not playerKey then
-            centerText(screenHeight - 4, "Karte fehlt!", colors.red)
+        local key = getKey()
+        if not key then
+            centerText(screenHeight - 5, "Karte fehlt!")
             if speaker then speaker.playSound("block.anvil.land") end
             sleep(2)
         else
-            playGame()
+            playGame(key)
         end
     end
     drawMainScreen()
 end
 
--- === Hauptprogramm ===
+-- === Start ===
 drawMainScreen()
-while true do
-    handleTouch(os.pullEvent("monitor_touch"))
-end
+while true do handleTouch(os.pullEvent("monitor_touch")) end
