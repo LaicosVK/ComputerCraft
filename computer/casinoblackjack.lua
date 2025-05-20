@@ -1,6 +1,6 @@
 -- === Blackjack-Spiel (Deutsch) ===
 local monitor, drive, speaker
-local version = "v10.2"
+local version = "v11"
 local MIN_BET = 50
 local BET_STEP = 50
 local BIG_BET_STEP = 500
@@ -66,7 +66,7 @@ local function handValue(hand)
     return total
 end
 
-local screenHeight = select(2, monitor.getSize())
+local screenWidth, screenHeight = monitor.getSize()
 
 local buttonY = {
     bet50 = screenHeight - 4,
@@ -119,7 +119,7 @@ local function playerTurn(player, dealer)
         displayHands(player, dealer, true)
         centerText(screenHeight - 1, "   [ ZIEHEN ]   ", colors.orange)
         centerText(screenHeight,     "   [ HALTEN ]   ", colors.lime)
-        local _, _, _, y = os.pullEvent("monitor_touch")
+        local _, _, x, y = os.pullEvent("monitor_touch")
         if y == screenHeight - 1 then
             table.insert(player, drawCard())
             if speaker then speaker.playSound("entity.item.pickup") end
@@ -187,10 +187,9 @@ local function playGame(key)
     sleep(4)
 end
 
-local function handleTouch(_, _, _, y)
+local function handleTouch(_, _, x, y)
     if y == buttonY.bet50 then
-        local _, x = monitor.getCursorPos()
-        if x < monitor.getSize() / 2 then
+        if x <= screenWidth / 2 then
             currentBet = math.max(MIN_BET, currentBet - BET_STEP)
             if speaker then speaker.playSound("block.note_block.bass") end
         else
@@ -198,8 +197,7 @@ local function handleTouch(_, _, _, y)
             if speaker then speaker.playSound("block.note_block.pling") end
         end
     elseif y == buttonY.bet500 then
-        local _, x = monitor.getCursorPos()
-        if x < monitor.getSize() / 2 then
+        if x <= screenWidth / 2 then
             currentBet = math.max(MIN_BET, currentBet - BIG_BET_STEP)
             if speaker then speaker.playSound("block.note_block.bass") end
         else
