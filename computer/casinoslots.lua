@@ -4,7 +4,7 @@ local defaultCost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "15"
+local version = "16"
 
 -- === Setup ===
 local modemSide = "bottom"
@@ -47,30 +47,34 @@ end
 
 -- === Bet UI ===
 local function drawScreen(state)
+    local w, _ = monitor.getSize()
     monitor.setTextScale(1)
     monitor.setBackgroundColor(colors.black)
     monitor.setTextColor(colors.white)
     monitor.clear()
 
+    -- Title
     centerText(2, "Slot Machine v." .. version)
-    centerText(4, "Mitgliedskarte einstecken")
 
     if state == "idle" then
-        centerText(6, "Einsatz: " .. currentBet .. " Credits")
+        centerText(5, "Einsatz: " .. currentBet .. " Credits")
 
-        monitor.setCursorPos(8, 8)
+        -- Bet adjustment buttons
+        monitor.setCursorPos(8, 7)
         monitor.write("[ -50 ]")
-        monitor.setCursorPos(18, 8)
+        monitor.setCursorPos(18, 7)
         monitor.write("[ +50 ]")
-
-        monitor.setCursorPos(8, 9)
+        monitor.setCursorPos(8, 8)
         monitor.write("[ -500 ]")
-        monitor.setCursorPos(18, 9)
+        monitor.setCursorPos(18, 8)
         monitor.write("[ +500 ]")
 
+        -- Green full-width play button
         monitor.setBackgroundColor(colors.green)
         monitor.setTextColor(colors.black)
-        centerText(11, "[   SPIELEN   ]")
+        monitor.setCursorPos(1, 10)
+        monitor.clearLine()
+        centerText(10, "[   SPIELEN   ]")
         monitor.setBackgroundColor(colors.black)
         monitor.setTextColor(colors.white)
 
@@ -190,7 +194,7 @@ while true do
         currentBet = math.max(minBet, currentBet - 500)
     elseif y == 9 and x >= 18 and x <= 24 then
         currentBet = math.min(maxBet, currentBet + 500)
-    elseif y == 11 then
+    elseif y == 10 then
         drawScreen("spinning")
         local key = getKey()
         if not key then
