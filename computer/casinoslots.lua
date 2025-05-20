@@ -4,7 +4,7 @@ local defaultCost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "16"
+local version = "17"
 
 -- === Setup ===
 local modemSide = "bottom"
@@ -60,21 +60,21 @@ local function drawScreen(state)
         centerText(5, "Einsatz: " .. currentBet .. " Credits")
 
         -- Bet adjustment buttons
-        monitor.setCursorPos(8, 7)
-        monitor.write("[ -50 ]")
-        monitor.setCursorPos(18, 7)
-        monitor.write("[ +50 ]")
         monitor.setCursorPos(8, 8)
-        monitor.write("[ -500 ]")
+        monitor.write("[ -50 ]")
         monitor.setCursorPos(18, 8)
+        monitor.write("[ +50 ]")
+        monitor.setCursorPos(8, 9)
+        monitor.write("[ -500 ]")
+        monitor.setCursorPos(18, 9)
         monitor.write("[ +500 ]")
 
         -- Green full-width play button
         monitor.setBackgroundColor(colors.green)
         monitor.setTextColor(colors.black)
-        monitor.setCursorPos(1, 10)
+        monitor.setCursorPos(1, 12)
         monitor.clearLine()
-        centerText(10, "[   SPIELEN   ]")
+        centerText(12, "[   SPIELEN   ]")
         monitor.setBackgroundColor(colors.black)
         monitor.setTextColor(colors.white)
 
@@ -194,7 +194,7 @@ while true do
         currentBet = math.max(minBet, currentBet - 500)
     elseif y == 9 and x >= 18 and x <= 24 then
         currentBet = math.min(maxBet, currentBet + 500)
-    elseif y == 10 then
+    elseif y == 12 then
         drawScreen("spinning")
         local key = getKey()
         if not key then
