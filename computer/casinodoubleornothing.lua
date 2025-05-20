@@ -1,5 +1,5 @@
--- Coin Flip Double or Nothing
-local version = "5"
+-- Coin Flip Double or Nothing (Revised)
+local version = "6"
 local initialBet = 500
 local currentBet = initialBet
 local gameState = "title"
@@ -8,13 +8,7 @@ local animationSpeed = 0.1
 -- Peripherals
 local drive = peripheral.find("drive")
 local speaker = peripheral.find("speaker")
-local monitor
-for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.getType(name) == "monitor" then
-        monitor = peripheral.wrap(name)
-        break
-    end
-end
+local monitor = peripheral.find("monitor")
 if not monitor then error("Monitor not found") end
 
 monitor.setTextScale(1)
@@ -23,7 +17,7 @@ rednet.open("top")
 
 -- Server Communication
 local function getKey()
-    if not drive.isDiskPresent() then return nil end
+    if not drive or not drive.isDiskPresent() then return nil end
     local path = drive.getMountPath()
     if not path or not fs.exists(path .. "/player.key") then return nil end
     local f = fs.open(path .. "/player.key", "r")
@@ -70,22 +64,44 @@ end
 -- Screens
 local function drawTitle()
     clear()
-    fullLineText(math.floor(height / 2) - 1, "Double or Nothing", colors.yellow)
-    fullLineText(math.floor(height / 2), "v" .. version, colors.gray)
-    fullLineText(math.floor(height / 2) + 2, "[ SPIELEN ]", colors.black, colors.lime)
+    fullLineText(2, "Double or Nothing", colors.yellow)
+    fullLineText(3, "v" .. version, colors.gray)
+
+    fullLineText(5, "Einsatz: " .. currentBet .. "¢", colors.white)
+
+    monitor.setCursorPos(6, 7)
+    monitor.setBackgroundColor(colors.red)
+    monitor.setTextColor(colors.white)
+    monitor.write("[ -50 ]")
+
+    monitor.setCursorPos(18, 7)
+    monitor.setBackgroundColor(colors.lime)
+    monitor.setTextColor(colors.black)
+    monitor.write("[ +50 ]")
+
+    monitor.setCursorPos(6, 8)
+    monitor.setBackgroundColor(colors.red)
+    monitor.setTextColor(colors.white)
+    monitor.write("[ -500 ]")
+
+    monitor.setCursorPos(18, 8)
+    monitor.setBackgroundColor(colors.lime)
+    monitor.setTextColor(colors.black)
+    monitor.write("[ +500 ]")
+
+    -- Play button
+    fullLineText(10, "[ SPIELEN ]", colors.black, colors.lime)
+
+    monitor.setBackgroundColor(colors.black)
+    monitor.setTextColor(colors.white)
     playSound("harp", 1, 2)
 end
 
 local function drawFlipScreen()
     clear()
     fullLineText(1, "Einsatz: " .. currentBet .. "¢", colors.yellow)
-
     fullLineText(math.floor(height / 2), "[Münze]", colors.white)
-
-    -- FLIP Button
     fullLineText(height - 4, "  FLIP  ", colors.black, colors.lime)
-
-    -- PAYOUT Button
     fullLineText(height - 2, "AUSZAHLEN", colors.white, colors.red)
 end
 
@@ -118,18 +134,11 @@ local function drawWinAnimation()
     end
 end
 
--- Main Game Logic
+-- Game Logic
 local function tryStartGame()
     local key = getKey()
-    if not key then
-        clear()
-        fullLineText(math.floor(height / 2), "Bitte Karte einlegen!", colors.orange)
-        playSound("bass", 1, 0.5)
-        sleep(2)
-        drawTitle()
-        return
-    end
-    if not removeCredits(key, initialBet) then
+    if not key then return end
+    if not removeCredits(key, currentBet) then
         clear()
         fullLineText(math.floor(height / 2), "Nicht genug Guthaben!", colors.red)
         playSound("bass", 1, 0.5)
@@ -137,7 +146,6 @@ local function tryStartGame()
         drawTitle()
         return
     end
-    currentBet = initialBet
     gameState = "game"
     drawFlipScreen()
 end
@@ -155,14 +163,7 @@ end
 
 local function tryPayout()
     local key = getKey()
-    if not key then
-        clear()
-        fullLineText(math.floor(height / 2), "Karte fehlt!", colors.orange)
-        playSound("bass", 1, 0.5)
-        sleep(2)
-        drawFlipScreen()
-        return
-    end
+    if not key then return end
     addCredits(key, currentBet)
     clear()
     fullLineText(math.floor(height / 2), "Auszahlung: " .. currentBet .. "¢", colors.lime)
@@ -181,8 +182,24 @@ drawTitle()
 while true do
     local event, side, x, y = os.pullEvent("monitor_touch")
 
-    if gameState == "title" and y == math.floor(height / 2) + 2 then
-        tryStartGame()
+    if gameState == "title" then
+        -- Play
+        if y == 10 then
+            tryStartGame()
+        -- Bet buttons
+        elseif y == 7 and x >= 6 and x <= 12 then
+            currentBet = math.max(50, currentBet - 50)
+            drawTitle()
+        elseif y == 7 and x >= 18 and x <= 24 then
+            currentBet = currentBet + 50
+            drawTitle()
+        elseif y == 8 and x >= 6 and x <= 12 then
+            currentBet = math.max(50, currentBet - 500)
+            drawTitle()
+        elseif y == 8 and x >= 18 and x <= 24 then
+            currentBet = currentBet + 500
+            drawTitle()
+        end
     elseif gameState == "game" then
         if y == height - 4 then
             tryFlip()
