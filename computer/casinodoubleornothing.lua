@@ -1,5 +1,5 @@
 -- Coin Flip Double or Nothing (Revised)
-local version = "6"
+local version = "7"
 local initialBet = 500
 local currentBet = initialBet
 local gameState = "title"
@@ -70,23 +70,15 @@ local function drawTitle()
     fullLineText(5, "Einsatz: " .. currentBet .. "¢", colors.white)
 
     monitor.setCursorPos(6, 7)
-    monitor.setBackgroundColor(colors.red)
-    monitor.setTextColor(colors.white)
     monitor.write("[ -50 ]")
 
     monitor.setCursorPos(18, 7)
-    monitor.setBackgroundColor(colors.lime)
-    monitor.setTextColor(colors.black)
     monitor.write("[ +50 ]")
 
     monitor.setCursorPos(6, 8)
-    monitor.setBackgroundColor(colors.red)
-    monitor.setTextColor(colors.white)
     monitor.write("[ -500 ]")
 
     monitor.setCursorPos(18, 8)
-    monitor.setBackgroundColor(colors.lime)
-    monitor.setTextColor(colors.black)
     monitor.write("[ +500 ]")
 
     -- Play button
