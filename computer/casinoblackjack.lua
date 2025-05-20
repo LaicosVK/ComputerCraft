@@ -1,10 +1,9 @@
 -- === Blackjack-Spiel (Deutsch) ===
 local monitor, drive, speaker
-local playerKey = nil
 local currentBet = 50
 local MIN_BET = 50
 local BET_STEP = 50
-local MAX_BET = 100000
+local MAX_BET = 1000000
 
 local version = "v10"
 
@@ -25,6 +24,8 @@ for _, name in ipairs(peripheral.getNames()) do
         drive = peripheral.wrap(name)
     elseif t == "speaker" then
         speaker = peripheral.wrap(name)
+    elseif t == "modem" then
+        rednet.open(name)
     end
 end
 
@@ -35,6 +36,8 @@ end
 monitor.setTextScale(1)
 monitor.setBackgroundColor(colors.black)
 monitor.setTextColor(colors.white)
+
+math.randomseed(os.time())
 
 -- === Hilfsfunktionen ===
 local function clear()
@@ -96,9 +99,9 @@ local function drawMainScreen()
     centerText(2, "Blackjack 5:2 " .. version)
     centerText(4, "Casinokarte einlegen")
     centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Credits")
-    centerText(buttonY.plus,  "   [ +50 ]   ", colors.gray)
-    centerText(buttonY.minus, "   [ -50 ]   ", colors.gray)
-    centerText(buttonY.play,  "   [ SPIELEN ]  ", colors.green)
+    centerText(buttonY.plus,  string.rep(" ", 4) .. "[ +50 ]" .. string.rep(" ", 4), colors.gray)
+    centerText(buttonY.minus, string.rep(" ", 4) .. "[ -50 ]" .. string.rep(" ", 4), colors.gray)
+    centerText(buttonY.play,  string.rep(" ", 2) .. "[ SPIELEN ]" .. string.rep(" ", 2), colors.green)
 end
 
 -- === Spieler-Key ===
@@ -144,7 +147,7 @@ end
 -- === Spiel-Logik ===
 local function displayHands(player, dealer, hideDealer)
     clear()
-	speaker.playSound("block.piston.extend")
+    speaker.playSound("block.piston.extend")
     centerText(2, "Dealer:")
     centerText(3, (hideDealer and (dealer[1] .. " ??") or table.concat(dealer, " ") .. " (" .. handValue(dealer) .. ")"))
     centerText(screenHeight - 4, "Deine Hand:")
@@ -174,7 +177,8 @@ end
 local function dealerTurn(dealer)
     while handValue(dealer) < 17 do
         table.insert(dealer, drawCard())
-        sleep(0.5)
+        sleep(0.7)
+        displayHands({}, dealer, false)
     end
 end
 
@@ -183,7 +187,15 @@ local function playGame()
     centerText(2, "Spiel startet...")
     sleep(1)
 
-    if not removeCredits(playerKey, currentBet) then
+    local key = getKey()
+    if not key then
+        centerText(4, "Karte fehlt!")
+        speaker.playSound("block.anvil.land")
+        sleep(2)
+        return
+    end
+
+    if not removeCredits(key, currentBet) then
         centerText(4, "Nicht genug Credits!")
         sleep(2)
         return
@@ -209,16 +221,16 @@ local function playGame()
     elseif dealerVal > 21 then
         centerText(screenHeight - 2, "Dealer bust! Du gewinnst! +" .. (currentBet / 2 * 5) .. " Cr", colors.green)
         speaker.playSound("entity.player.levelup")
-        addCredits(playerKey, currentBet / 2 * 5)
+        addCredits(key, currentBet / 2 * 5)
     elseif playerVal > dealerVal then
         centerText(screenHeight - 2, "Du gewinnst! +" .. (currentBet * 2) .. " Cr", colors.green)
         speaker.playSound("entity.villager.yes")
-        addCredits(playerKey, currentBet * 2)
+        addCredits(key, currentBet * 2)
     elseif playerVal == dealerVal then
         centerText(screenHeight - 2, "Unentschieden.", colors.yellow)
         centerText(screenHeight - 1, "Einsatz zurück.", colors.yellow)
         speaker.playSound("block.note_block.hat")
-        addCredits(playerKey, currentBet)
+        addCredits(key, currentBet)
     else
         centerText(screenHeight - 2, "Dealer gewinnt.", colors.red)
         speaker.playSound("entity.villager.no")
@@ -227,30 +239,21 @@ local function playGame()
     sleep(4)
 end
 
-
 -- === Eingabe-Verarbeitung ===
 local function handleTouch(_, _, x, y)
     if y == buttonY.plus then
         currentBet = math.min(MAX_BET, currentBet + BET_STEP)
-		speaker.playSound("block.note_block.pling")
+        speaker.playSound("block.note_block.pling")
     elseif y == buttonY.minus then
         currentBet = math.max(MIN_BET, currentBet - BET_STEP)
-		speaker.playSound("block.note_block.bass")
+        speaker.playSound("block.note_block.bass")
     elseif y == buttonY.play then
-        playerKey = getKey()
-        if not playerKey then
-            centerText(screenHeight - 5, "Karte fehlt!")
-			speaker.playSound("block.anvil.land")
-            sleep(2)
-        else
-            playGame()
-        end
+        playGame()
     end
     drawMainScreen()
 end
 
 -- === Hauptprogramm ===
-rednet.open("top")
 drawMainScreen()
 
 while true do
