@@ -1,6 +1,6 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v8"
+local version = "v9"
 local MIN_BET = 500
 local BET_STEP = 500
 local BIG_BET_STEP = 5000
@@ -103,7 +103,7 @@ end
 local function calculateWinnings()
     local baseMultiplier = 0.2
     local streakBonus = streak * 0.15
-    local roundBonus = math.max(0, (round - 3) * 0.1)
+    local roundBonus = math.max(0, (round - 5) * 0.1)
     return math.floor(currentBet * (baseMultiplier + streakBonus + roundBonus))
 end
 
@@ -148,7 +148,7 @@ local function handleTouch(_, _, x, y)
         key = getKey()
         if not key then centerText(2, "Karte fehlt!") sleep(2) drawTitleScreen() return end
         if not removeCredits(key, currentBet) then centerText(2, "Nicht genug Credits!") sleep(2) drawTitleScreen() return end
-        round, streak, winnings, currentNumber, wrongGuesses = 1, 0, 0, 6, 0
+        round, streak, winnings, currentNumber, wrongGuesses = 1, 0, 0, 12, 0
         drawGameScreen()
         while true do
             local e = { os.pullEvent("monitor_touch") }
