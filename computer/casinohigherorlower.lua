@@ -1,9 +1,9 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v5"
+local version = "v6"
 local MIN_BET = 500
-local BET_STEP = 50
-local BIG_BET_STEP = 500
+local BET_STEP = 500
+local BIG_BET_STEP = 5000
 local MAX_BET = 1000000
 local currentBet = MIN_BET
 
@@ -105,7 +105,11 @@ local function calculateWinnings()
 end
 
 local function gameStep(choice)
-    local newRoll = math.random(1, 12)
+    local newRoll
+    repeat
+        newRoll = math.random(1, 12)
+    until newRoll ~= currentNumber
+
     local correct = (choice == "higher" and newRoll > currentNumber) or (choice == "lower" and newRoll < currentNumber)
     currentNumber = newRoll
     round = round + 1
