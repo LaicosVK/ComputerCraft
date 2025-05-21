@@ -1,6 +1,6 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v4"
+local version = "v5"
 local MIN_BET = 500
 local BET_STEP = 50
 local BIG_BET_STEP = 500
@@ -80,6 +80,7 @@ end
 local function drawGameScreen()
     clear()
     centerText(2, "Runde: " .. round .. " | Serie: " .. streak)
+    centerText(3, "Leben: " .. string.rep("\3 ", maxWrongGuesses - wrongGuesses))
     centerText(5, "[ HÖHER ]", colors.orange)
     centerText(7, "Zahl: " .. currentNumber, colors.gray)
     centerText(9, "[ NIEDRIGER ]", colors.orange)
@@ -90,8 +91,9 @@ local function drawStatsScreen(wonAmount)
     clear()
     centerText(4, "Spiel beendet!")
     centerText(6, "Runden: " .. round )
-	centerText(7, "Richtige Serie: " .. streak )
-    centerText(9, wonAmount > 0 and ("Gewonnen: " .. wonAmount .. " Credits") or "Verloren!", wonAmount > 0 and colors.green or colors.red)
+    centerText(7, "Richtige Serie: " .. streak )
+    centerText(8, "Verbleibende Leben: " .. string.rep("\3 ", maxWrongGuesses - wrongGuesses))
+    centerText(10, wonAmount > 0 and ("Gewonnen: " .. wonAmount .. " Credits") or "Verloren!", wonAmount > 0 and colors.green or colors.red)
     if wonAmount > 0 then addCredits(key, wonAmount) end
     sleep(4)
     drawTitleScreen()
@@ -123,10 +125,18 @@ end
 
 -- === Main Handler ===
 local function handleTouch(_, _, x, y)
-    if y == screenHeight - 4 then if x <= screenWidth / 2 then currentBet = math.max(MIN_BET, currentBet - BET_STEP)
-                                  else currentBet = math.min(MAX_BET, currentBet + BET_STEP) end
-    elseif y == screenHeight - 3 then if x <= screenWidth / 2 then currentBet = math.max(MIN_BET, currentBet - BIG_BET_STEP)
-                                      else currentBet = math.min(MAX_BET, currentBet + BIG_BET_STEP) end
+    if y == screenHeight - 4 then
+        if x <= screenWidth / 2 then
+            currentBet = math.max(MIN_BET, currentBet - BET_STEP)
+        else
+            currentBet = math.min(MAX_BET, currentBet + BET_STEP)
+        end
+    elseif y == screenHeight - 3 then
+        if x <= screenWidth / 2 then
+            currentBet = math.max(MIN_BET, currentBet - BIG_BET_STEP)
+        else
+            currentBet = math.min(MAX_BET, currentBet + BIG_BET_STEP)
+        end
     elseif y == screenHeight - 1 then
         key = getKey()
         if not key then centerText(2, "Karte fehlt!") sleep(2) drawTitleScreen() return end
@@ -135,9 +145,14 @@ local function handleTouch(_, _, x, y)
         drawGameScreen()
         while true do
             local e = { os.pullEvent("monitor_touch") }
-            if e[4] == 5 then if not gameStep("higher") then break end
-            elseif e[4] == 9 then if not gameStep("lower") then break end
-            elseif e[4] == screenHeight then drawStatsScreen(winnings) break end
+            if e[4] == 5 then
+                if not gameStep("higher") then break end
+            elseif e[4] == 9 then
+                if not gameStep("lower") then break end
+            elseif e[4] == screenHeight then
+                drawStatsScreen(winnings)
+                break
+            end
         end
     end
     drawTitleScreen()
