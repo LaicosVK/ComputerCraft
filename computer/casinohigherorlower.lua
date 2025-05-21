@@ -1,6 +1,6 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v6"
+local version = "v7"
 local MIN_BET = 500
 local BET_STEP = 500
 local BIG_BET_STEP = 5000
@@ -59,7 +59,7 @@ local function addCredits(key, amount)
 end
 
 -- === Game Variables ===
-local currentNumber = 6
+local currentNumber = 12
 local round = 1
 local streak = 0
 local maxWrongGuesses = 3
@@ -72,8 +72,8 @@ local function drawTitleScreen()
     clear()
     centerText(3, "Higher or Lower " .. version)
     centerText(screenHeight - 6, "Einsatz: " .. currentBet .. " Credits")
-    centerText(screenHeight - 4, "[-50]           [+50]", colors.gray)
-    centerText(screenHeight - 3, "[-500]         [+500]", colors.gray)
+    centerText(screenHeight - 4, "[-" .. BET_STEP .. "]           [+" .. BET_STEP .. "]", colors.gray)
+    centerText(screenHeight - 3, "[-" .. BIG_BET_STEP .. "]         [+" .. BIG_BET_STEP .."]", colors.gray)
     centerText(screenHeight - 1, "   [ SPIELEN ]   ", colors.green)
 end
 
@@ -101,7 +101,7 @@ end
 
 -- === Game Logic ===
 local function calculateWinnings()
-    return math.floor(currentBet * (1 + (streak * 0.2) + (round * 0.05)))
+    return math.floor(currentBet * (1 + (streak * 0.2) + ((round-2) * 0.5)))
 end
 
 local function gameStep(choice)
