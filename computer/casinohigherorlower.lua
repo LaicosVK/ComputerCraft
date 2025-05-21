@@ -1,7 +1,7 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v3"
-local MIN_BET = 100
+local version = "v4"
+local MIN_BET = 500
 local BET_STEP = 50
 local BIG_BET_STEP = 500
 local MAX_BET = 1000000
@@ -99,7 +99,7 @@ end
 
 -- === Game Logic ===
 local function calculateWinnings()
-    return math.floor(currentBet * (1 + (streak * 0.4) + (round * 0.1)))
+    return math.floor(currentBet * (1 + (streak * 0.2) + (round * 0.05)))
 end
 
 local function gameStep(choice)
