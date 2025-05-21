@@ -1,6 +1,6 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v2"
+local version = "v3"
 local MIN_BET = 100
 local BET_STEP = 50
 local BIG_BET_STEP = 500
@@ -89,8 +89,9 @@ end
 local function drawStatsScreen(wonAmount)
     clear()
     centerText(4, "Spiel beendet!")
-    centerText(6, "Runden: " .. round .. " | Richtige Serie: " .. streak)
-    centerText(8, wonAmount > 0 and ("Gewonnen: " .. wonAmount .. " Credits") or "Verloren!", wonAmount > 0 and colors.green or colors.red)
+    centerText(6, "Runden: " .. round )
+	centerText(7, "Richtige Serie: " .. streak )
+    centerText(9, wonAmount > 0 and ("Gewonnen: " .. wonAmount .. " Credits") or "Verloren!", wonAmount > 0 and colors.green or colors.red)
     if wonAmount > 0 then addCredits(key, wonAmount) end
     sleep(4)
     drawTitleScreen()
