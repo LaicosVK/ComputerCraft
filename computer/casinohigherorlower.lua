@@ -1,6 +1,6 @@
 -- === Higher or Lower (Deutsch) ===
 local monitor, drive, speaker
-local version = "v1"
+local version = "v2"
 local MIN_BET = 100
 local BET_STEP = 50
 local BIG_BET_STEP = 500
@@ -81,7 +81,7 @@ local function drawGameScreen()
     clear()
     centerText(2, "Runde: " .. round .. " | Serie: " .. streak)
     centerText(5, "[ HÖHER ]", colors.orange)
-    centerText(7, "Zahl: " .. currentNumber, colors.white)
+    centerText(7, "Zahl: " .. currentNumber, colors.gray)
     centerText(9, "[ NIEDRIGER ]", colors.orange)
     centerText(screenHeight, "[ AUSZAHLUNG: " .. winnings .. " Cr ]", colors.green)
 end
