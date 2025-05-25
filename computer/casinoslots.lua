@@ -4,10 +4,10 @@ local defaultCost = config.cost
 local payout_small = config.payout_small
 local payout_medium = config.payout_medium
 local payout_big = config.payout_big
-local version = "17"
+local version = "18"
 
 -- === Setup ===
-local modemSide = "bottom"
+local modemSide = "top"
 local diskDrive = peripheral.find("drive")
 local diskDriveSide = diskDrive and peripheral.getName(diskDrive)
 local monitor = peripheral.find("monitor")
