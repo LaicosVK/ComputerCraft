@@ -1,10 +1,9 @@
 local bigfont = require "bigfont"
 local monitor = peripheral.wrap("back")
-print("v4")
+print("v5")
 
 
 local warningScreen = {
-	"",
 	"",
     " ###  ###  ## ## ###### ##  ###  ##   ##", -- Line 1
     "#### ## ## ## ## ###### ## ##### ###  ##", -- Line 2
