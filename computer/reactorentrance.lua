@@ -1,31 +1,44 @@
 local bigfont = require "bigfont"
-local mon = peripheral.wrap("back")
+local mon = peripheral.wrap("right")
 
-mon.setBackgroundColor(colors.black)
-mon.clear()
-mon.setTextScale(1)
 
--- Get monitor size
-local w, _ = mon.getSize()
+local warningScreen = {
+    " ██████╗ █████╗ ██╗   ██╗████████╗██╗ ██████╗ ███╗   ██╗", -- Line 1
+    "██╔════╝██╔══██╗██║   ██║╚══██╔══╝██║██╔═══██╗████╗  ██║", -- Line 2
+    "██║     ███████║██║   ██║   ██║   ██║██║   ██║██╔██╗ ██║", -- Line 3
+    "██║     ██╔══██║██║   ██║   ██║   ██║██║   ██║██║╚██╗██║", -- Line 4
+    "╚██████╗██║  ██║╚██████╔╝   ██║   ██║╚██████╔╝██║ ╚████║", -- Line 5
+    " ╚═════╝╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝", -- Line 6
+    "",                                                       -- Spacer
+    "   ! Nuklearanlage !   ",
+    "!!!  Betreten verboten  !!!"
+}
 
--- Text to display
-local bigText = "CAUTION"
-local smallText = "Enter at your own risk"
 
--- BigFont width per character (scale 0.5 = 4 pixels per char)
-local charWidth = 4  -- for scale = 0.5
-local scale = 0.5
+-- Draw a line of text with full background width and alignment
+local function drawLine(line, text, colorText, colorBackground, alignment)
+    alignment = alignment or "left"
+    colorText = colorText or colors.white
+    colorBackground = colorBackground or colors.black
 
--- Calculate width in pixels and center X
-local textWidth = #bigText * charWidth
-local x = math.floor((w * 6 - textWidth) / 2 / charWidth) + 1  -- 6 pixels per char cell
+    monitor.setCursorPos(1, line)
+    monitor.setBackgroundColor(colorBackground)
+    monitor.clearLine()
 
--- Draw big "CAUTION"
-mon.setTextColor(colors.red)
-bigfont.writeOn(mon, x, bigText, 2, scale)
+    local x = 1
+    if alignment == "center" then
+        x = math.floor((monitor.getSize()) - #text) / 2 + 1
+    elseif alignment == "right" then
+        local w = select(1, monitor.getSize())
+        x = w - #text + 1
+    end
 
--- Draw normal small text
-mon.setTextColor(colors.white)
-local x2 = math.floor((w - #smallText) / 2) + 1
-mon.setCursorPos(x2, 8)
-mon.write(smallText)
+    monitor.setCursorPos(x, line)
+    monitor.setTextColor(colorText)
+    monitor.write(text)
+end
+
+
+for i, line in ipairs(warningScreen) do
+    drawLine(i, line, colors.yellow, colors.black, "center")
+end
