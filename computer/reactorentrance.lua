@@ -1,5 +1,6 @@
 local bigfont = require "bigfont"
 local monitor = peripheral.wrap("back")
+print("v1")
 
 
 local warningScreen = {
