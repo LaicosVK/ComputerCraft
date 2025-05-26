@@ -1,17 +1,17 @@
 local bigfont = require "bigfont"
 local monitor = peripheral.wrap("back")
-print("v3")
+print("v4")
 
 
 local warningScreen = {
 	"",
 	"",
-    " ###  ###  ## ## #### ##  ###  ##   ##", -- Line 1
-    "#### ## ## ## ## #### ## ##### ###  ##", -- Line 2
-    "##   ##### ## ##  ##  ## ## ## #### ##", -- Line 3
-    "##   ##### ## ##  ##  ## ## ## ## ####", -- Line 4
-    "#### ## ## #####  ##  ## ##### ##  ###", -- Line 5
-    " ### ## ##  ###   ##  ##  ###  ##   ##", -- Line 6
+    " ###  ###  ## ## ###### ##  ###  ##   ##", -- Line 1
+    "#### ## ## ## ## ###### ## ##### ###  ##", -- Line 2
+    "##   ##### ## ##   ##   ## ## ## #### ##", -- Line 3
+    "##   ##### ## ##   ##   ## ## ## ## ####", -- Line 4
+    "#### ## ## #####   ##   ## ##### ##  ###", -- Line 5
+    " ### ## ##  ###    ##   ##  ###  ##   ##", -- Line 6
     "",                                               -- Spacer
 	"",
     "   ! Nuklearanlage !   ",
@@ -31,7 +31,7 @@ local function drawLine(line, text, colorText, colorBackground, alignment)
 
     local x = 1
     if alignment == "center" then
-        x = math.floor((monitor.getSize()) - #text) / 2 + 1
+        x = math.floor((monitor.getSize()) - #text) / 2 + 2
     elseif alignment == "right" then
         local w = select(1, monitor.getSize())
         x = w - #text + 1
