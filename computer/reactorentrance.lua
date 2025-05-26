@@ -1,5 +1,5 @@
 local bigfont = require "bigfont"
-local mon = peripheral.wrap("right")
+local monitor = peripheral.wrap("right")
 
 
 local warningScreen = {
