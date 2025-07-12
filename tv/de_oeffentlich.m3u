@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="daserste.de" tvg-name="Das Erste" group-title="Öffentlich-Rechtlich",Das Erste
+https://mcdn.daserste.de/daserste/de/master.m3u8
+#EXTINF:-1 tvg-id="zdf.de" tvg-name="ZDF" group-title="Öffentlich-Rechtlich",ZDF
+https://zdf-hls-01.akamaized.net/hls/live/2016498/de/high/master.m3u8
+#EXTINF:-1 tvg-id="3sat.de" tvg-name="3sat" group-title="Öffentlich-Rechtlich",3sat
+https://zdf-hls-15.akamaized.net/hls/live/2016515/3sat_de/high/master.m3u8
+#EXTINF:-1 tvg-id="arte.tv" tvg-name="Arte" group-title="Öffentlich-Rechtlich",Arte
+https://artelive-lh.akamaihd.net/i/artelive_de@344805/index_1_av-p.m3u8
+#EXTINF:-1 tvg-id="kika.de" tvg-name="KiKA" group-title="Öffentlich-Rechtlich",KiKA
+https://kikahls-lh.akamaihd.net/i/kikahls_1@449235/index_1_av-p.m3u8
